@@ -75,7 +75,7 @@ fn compile_shader(src: &str, ty: GLenum) -> GLuint {
                        .ok()
                        .expect("ShaderInfoLog not valid utf8"));
         }
-    }
+    };
     shader
 }
 

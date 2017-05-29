@@ -1,6 +1,8 @@
+extern crate byteorder;
 extern crate gl;
 extern crate glutin;
 mod mesh;
+mod md2;
 
 use gl::types::*;
 use mesh::Mesh;
