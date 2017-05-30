@@ -4,6 +4,9 @@ use std::mem;
 use std::ptr;
 use std::str;
 use std::ffi::CString;
+use cgmath;
+use cgmath::prelude::*;
+use cgmath::{Matrix4, Vector4, Vector3, Matrix, Transform, Deg, Basis3};
 
 pub struct Mesh {
 	pub program: GLuint,
@@ -11,6 +14,7 @@ pub struct Mesh {
 	pub fs: GLuint,
 	pub vao: GLuint,
 	pub vbo: GLuint,
+	pub num_verts: u32,
 }
 
 impl Mesh {
@@ -21,16 +25,34 @@ impl Mesh {
 		
 		let (vao, vbo) = create_vertex_buffer(vertex_data, program);
 		
-		Mesh { program, vs, fs, vao, vbo }
+		Mesh { program, vs, fs, vao, vbo, num_verts: vertex_data.len() as u32 }
 	}
 	
 	pub fn draw(&self) {
+		let dc = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
+			scale: 1.0,
+			rot: Basis3::from_angle_x(Deg(-90.0)),
+			disp: Vector3::new(0.0, 0.0, -1.5),
+		};
+		let trans: Matrix4<GLfloat> = dc.into();
+		
+		let proj = cgmath::perspective(
+			cgmath::Deg(90.0),
+			4.0/3.0,
+			1.0,
+			20.0);
+		
 		unsafe {
 			gl::UseProgram(self.program);
 			gl::BindVertexArray(self.vao);
 			
-			// Draw a triangle from the 3 vertices
-			gl::DrawArrays(gl::TRIANGLES, 0, 3);
+			let uni_trans = gl::GetUniformLocation(self.program, CString::new("trans").unwrap().as_ptr());
+			gl::UniformMatrix4fv(uni_trans, 1, gl::FALSE, trans.as_ptr());
+			
+			let uni_proj = gl::GetUniformLocation(self.program, CString::new("proj").unwrap().as_ptr());
+			gl::UniformMatrix4fv(uni_proj, 1, gl::FALSE, proj.as_ptr());
+			
+			gl::DrawArrays(gl::TRIANGLES, 0, self.num_verts as i32);
 		}
 	}
 }
@@ -133,7 +155,7 @@ fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint) -> (GLuint, GL
         let pos_attr = gl::GetAttribLocation(program, CString::new("position").unwrap().as_ptr());
         gl::EnableVertexAttribArray(pos_attr as GLuint);
         gl::VertexAttribPointer(pos_attr as GLuint,
-                                2,
+                                3,
                                 gl::FLOAT,
                                 gl::FALSE as GLboolean,
                                 0,

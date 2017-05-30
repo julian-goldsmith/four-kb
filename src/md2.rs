@@ -1,9 +1,13 @@
 use byteorder::{LittleEndian, ReadBytesExt};
+use mesh::Mesh;
+use std::cmp::Ordering;
 use std::string::String;
 use std::io;
 use std::io::prelude::*;
 use std::io::{Seek, Read, SeekFrom, Error};
+use gl::types::*;
 
+#[derive(Debug)]
 pub struct md2_header_t {
 	pub ident: u32,
 	pub version: u32,
@@ -24,31 +28,37 @@ pub struct md2_header_t {
 	pub offset_end: u32,
 }
 
+#[derive(Debug)]
 pub struct vec3_t {
 	pub x: f32,
 	pub y: f32,
 	pub z: f32,
 }
 
+#[derive(Debug)]
 pub struct md2_skin_t {
 	name: String,
 }
 
+#[derive(Debug)]
 pub struct md2_texcoord_t {
 	pub s: i16,
 	pub t: i16,
 }
 
+#[derive(Debug)]
 pub struct md2_triangle_t {
 	pub vertex: [u16; 3],
 	pub st: [u16; 3],
 }
 
+#[derive(Debug)]
 pub struct md2_vertex_t {
 	pub v: [u8; 3],
 	pub normal_index: u8,		// FIXME: anorms.h
 }
 
+#[derive(Debug)]
 pub struct md2_frame_t {
 	scale: vec3_t,
 	translate: vec3_t,
@@ -134,19 +144,26 @@ fn read_frames<T: Read + Seek>(mut reader: &mut T, header: &md2_header_t) -> Res
 	let mut frames = Vec::with_capacity(header.num_frames as usize);
 	
 	for _ in 0..header.num_frames {
-		let scale_x = reader.read_f32::<LittleEndian>()?;
-		let scale_y = reader.read_f32::<LittleEndian>()?;
-		let scale_z = reader.read_f32::<LittleEndian>()?;
+		let mut frame = md2_frame_t { 
+			scale: vec3_t { x: 0.0, y: 0.0, z: 0.0, }, 
+			translate: vec3_t { x: 0.0, y: 0.0, z: 0.0, }, 
+			name: String::from(""), 
+			verts: vec![],
+		};
 		
-		let translate_x = reader.read_f32::<LittleEndian>()?;
-		let translate_y = reader.read_f32::<LittleEndian>()?;
-		let translate_z = reader.read_f32::<LittleEndian>()?;
+		frame.scale.x = reader.read_f32::<LittleEndian>()?;
+		frame.scale.y = reader.read_f32::<LittleEndian>()?;
+		frame.scale.z = reader.read_f32::<LittleEndian>()?;
+		
+		frame.translate.x = reader.read_f32::<LittleEndian>()?;
+		frame.translate.y = reader.read_f32::<LittleEndian>()?;
+		frame.translate.z = reader.read_f32::<LittleEndian>()?;
 		
 		let mut name_bytes = vec![0 as u8; 16];
 		reader.read(&mut name_bytes[..]);
-		let name = String::from_utf8(name_bytes).unwrap();
+		frame.name = String::from_utf8(name_bytes).unwrap();
 		
-		let mut verts = Vec::with_capacity(header.num_vertices as usize);
+		frame.verts = Vec::with_capacity(header.num_vertices as usize);
 		
 		for _ in 0..header.num_vertices {
 			let mut vert = md2_vertex_t {
@@ -157,23 +174,63 @@ fn read_frames<T: Read + Seek>(mut reader: &mut T, header: &md2_header_t) -> Res
 			reader.read(&mut vert.v[..])?;
 			vert.normal_index = reader.read_u8()?;
 			
-			verts.push(vert);
+			frame.verts.push(vert);
 		}
 		
-		frames.push(md2_frame_t { 
-			scale: vec3_t { x: scale_x, y: scale_y, z: scale_z, }, 
-			translate: vec3_t { x: translate_x, y: translate_y, z: translate_z, }, 
-			name, 
-			verts, });		// FIXME: verts
+		frames.push(frame);
 	};
 	
 	Ok(frames)
 }
 
-fn read_md2_model<T: Read + Seek>(mut reader: &mut T) {
+fn compute_frame(header: &md2_header_t, tris: &Vec<md2_triangle_t>, frames: &Vec<md2_frame_t>) -> Vec<GLfloat> {
+	let frame = &frames[0];
+	let mut verts_out = Vec::with_capacity(3 * header.num_vertices as usize);
+	
+	for tri in tris.iter() {
+		for i in 0..3 {
+			let vert = &frame.verts[tri.vertex[i] as usize];
+			
+			verts_out.push(frame.scale.x * vert.v[0] as f32 + frame.translate.x);
+			verts_out.push(frame.scale.y * vert.v[1] as f32 + frame.translate.y);
+			verts_out.push(frame.scale.z * vert.v[2] as f32 + frame.translate.z);
+		}
+	};
+	
+	// normalize verts
+	let max = verts_out.iter().cloned().max_by(|x, y| x.partial_cmp(y).unwrap_or(Ordering::Equal)).unwrap_or(1.0);
+	verts_out.iter().map(|v| v / max).collect()
+}
+
+// Shader sources
+static VS_SRC: &'static str = "#version 150\n\
+    in vec3 position;\n\
+	
+	uniform mat4 trans;
+	uniform mat4 proj;
+	
+    void main() {\n\
+		gl_Position = proj * trans * vec4(position, 1.0);\n\
+    }";
+
+static FS_SRC: &'static str = "#version 150\n\
+    out vec4 out_color;\n\
+    void main() {\n\
+		out_color = vec4(1.0, 1.0, 1.0, 1.0);\n\
+    }";
+
+pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T) -> Result<Mesh,()> {
 	let header = read_header(&mut reader).unwrap();
 	let skins = read_skins(&mut reader, &header).unwrap();
 	let texcoords = read_texcoords(&mut reader, &header).unwrap();
 	let tris = read_triangles(&mut reader, &header).unwrap();
 	let frames = read_frames(&mut reader, &header).unwrap();
+	
+	//println!("header {:?}", header);
+	
+	let computed = compute_frame(&header, &tris, &frames);
+	
+	println!("computed {:?}", computed);
+	
+	Ok(Mesh::new(VS_SRC, FS_SRC, &computed))
 }
