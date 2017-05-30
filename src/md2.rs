@@ -6,6 +6,7 @@ use std::io;
 use std::io::prelude::*;
 use std::io::{Seek, Read, SeekFrom, Error};
 use gl::types::*;
+use image::Image;
 
 #[derive(Debug)]
 pub struct md2_header_t {
@@ -183,9 +184,10 @@ fn read_frames<T: Read + Seek>(mut reader: &mut T, header: &md2_header_t) -> Res
 	Ok(frames)
 }
 
-fn compute_frame(header: &md2_header_t, tris: &Vec<md2_triangle_t>, frames: &Vec<md2_frame_t>) -> Vec<GLfloat> {
+fn compute_frame(header: &md2_header_t, tris: &Vec<md2_triangle_t>, frames: &Vec<md2_frame_t>, texcoords: &Vec<md2_texcoord_t>) -> (Vec<GLfloat>, Vec<GLfloat>) {
 	let frame = &frames[0];
 	let mut verts_out = Vec::with_capacity(3 * header.num_vertices as usize);
+	let mut texcoords_out = Vec::with_capacity(2 * header.num_st as usize);
 	
 	for tri in tris.iter() {
 		for i in 0..3 {
@@ -194,12 +196,15 @@ fn compute_frame(header: &md2_header_t, tris: &Vec<md2_triangle_t>, frames: &Vec
 			verts_out.push(frame.scale.x * vert.v[0] as f32 + frame.translate.x);
 			verts_out.push(frame.scale.y * vert.v[1] as f32 + frame.translate.y);
 			verts_out.push(frame.scale.z * vert.v[2] as f32 + frame.translate.z);
+			
+			texcoords_out.push(texcoords[tri.st[i] as usize].s as f32);
+			texcoords_out.push(texcoords[tri.st[i] as usize].t as f32);
 		}
 	};
 	
 	// normalize verts
 	let max = verts_out.iter().cloned().max_by(|x, y| x.partial_cmp(y).unwrap_or(Ordering::Equal)).unwrap_or(1.0);
-	verts_out.iter().map(|v| v / max).collect()
+	(verts_out.iter().map(|v| v / max).collect(), texcoords_out)
 }
 
 // Shader sources
@@ -215,22 +220,20 @@ static VS_SRC: &'static str = "#version 150\n\
 
 static FS_SRC: &'static str = "#version 150\n\
     out vec4 out_color;\n\
+	in vec2 Texcoord;\n\
+	uniform sampler2D tex;\n\
     void main() {\n\
-		out_color = vec4(1.0, 1.0, 1.0, 1.0);\n\
+		out_color = texture(tex, Texcoord);\n\
     }";
 
-pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T) -> Result<Mesh,()> {
+pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T, tex: &Image) -> Result<Mesh,()> {
 	let header = read_header(&mut reader).unwrap();
 	let skins = read_skins(&mut reader, &header).unwrap();
 	let texcoords = read_texcoords(&mut reader, &header).unwrap();
 	let tris = read_triangles(&mut reader, &header).unwrap();
 	let frames = read_frames(&mut reader, &header).unwrap();
 	
-	//println!("header {:?}", header);
+	let (computed_verts, computed_texcoords) = compute_frame(&header, &tris, &frames, &texcoords);
 	
-	let computed = compute_frame(&header, &tris, &frames);
-	
-	println!("computed {:?}", computed);
-	
-	Ok(Mesh::new(VS_SRC, FS_SRC, &computed))
+	Ok(Mesh::new(VS_SRC, FS_SRC, &computed_verts, &computed_texcoords, tex))
 }

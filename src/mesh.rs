@@ -4,9 +4,11 @@ use std::mem;
 use std::ptr;
 use std::str;
 use std::ffi::CString;
+use std::os::raw::c_void;
 use cgmath;
 use cgmath::prelude::*;
 use cgmath::{Matrix4, Vector4, Vector3, Matrix, Transform, Deg, Basis3};
+use image::Image;
 
 pub struct Mesh {
 	pub program: GLuint,
@@ -14,33 +16,35 @@ pub struct Mesh {
 	pub fs: GLuint,
 	pub vao: GLuint,
 	pub vbo: GLuint,
+	pub tex: GLuint,
 	pub num_verts: u32,
+	
+	pub transform: cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>,
 }
 
 impl Mesh {
-	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat]) -> Mesh {
+	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat], texcoord_data: &[GLfloat], image: &Image) -> Mesh {
 		let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
 		let fs = compile_shader(fragment_shader, gl::FRAGMENT_SHADER);
 		let program = link_program(vs, fs);
 		
 		let (vao, vbo) = create_vertex_buffer(vertex_data, program);
 		
-		Mesh { program, vs, fs, vao, vbo, num_verts: vertex_data.len() as u32 }
-	}
-	
-	pub fn draw(&self) {
-		let dc = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
+		let tex = create_texture(image);
+		
+		create_texcoord_buffer(texcoord_data, program);
+		
+		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
 			scale: 1.0,
 			rot: Basis3::from_angle_x(Deg(-90.0)),
 			disp: Vector3::new(0.0, 0.0, -1.5),
 		};
-		let trans: Matrix4<GLfloat> = dc.into();
 		
-		let proj = cgmath::perspective(
-			cgmath::Deg(90.0),
-			4.0/3.0,
-			1.0,
-			20.0);
+		Mesh { program, vs, fs, vao, vbo, tex, num_verts: vertex_data.len() as u32, transform }
+	}
+	
+	pub fn draw(&self, proj: &Matrix4<GLfloat>) {
+		let trans: Matrix4<GLfloat> = self.transform.clone().into();
 		
 		unsafe {
 			gl::UseProgram(self.program);
@@ -163,4 +167,37 @@ fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint) -> (GLuint, GL
     };
 	
 	(vao, vbo)
+}
+
+fn create_texcoord_buffer(texcoord_data: &[GLfloat], program: GLuint) /*-> GLuint*/ {
+    //let mut vao = 0;
+    //let mut vbo = 0;
+
+    unsafe {
+		// FIXME: use VBOs?
+        let tex_attr = gl::GetAttribLocation(program, CString::new("texcoord").unwrap().as_ptr());
+        gl::EnableVertexAttribArray(tex_attr as GLuint);
+        gl::VertexAttribPointer(tex_attr as GLuint,
+                                3,
+                                gl::FLOAT,
+                                gl::FALSE as GLboolean,
+                                0,
+                                texcoord_data.as_ptr() as *const c_void);
+    };
+	
+	//(vao, vbo)
+}
+
+fn create_texture(image: &Image) -> GLuint {
+	let mut tex = 0;
+	
+	unsafe {
+		gl::GenTextures(1, &mut tex);
+		gl::BindTexture(gl::TEXTURE_2D, tex);
+		
+		let slice = &image.data[0..];
+		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, image.width as i32, image.height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
+	}
+	
+	tex
 }
