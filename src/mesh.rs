@@ -23,7 +23,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat], texcoord_data: &[GLfloat], image: &Image) -> Mesh {
+	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat], image: &Image) -> Mesh {
 		let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
 		let fs = compile_shader(fragment_shader, gl::FRAGMENT_SHADER);
 		let program = link_program(vs, fs);
@@ -32,10 +32,8 @@ impl Mesh {
 		
 		let tex = create_texture(image);
 		
-		create_texcoord_buffer(texcoord_data, program);
-		
 		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
-			scale: 1.0,
+			scale: 0.05,
 			rot: Basis3::from_angle_x(Deg(-90.0)),
 			disp: Vector3::new(0.0, 0.0, -1.5),
 		};
@@ -49,12 +47,16 @@ impl Mesh {
 		unsafe {
 			gl::UseProgram(self.program);
 			gl::BindVertexArray(self.vao);
+			gl::BindTexture(gl::TEXTURE_2D, self.tex);
 			
 			let uni_trans = gl::GetUniformLocation(self.program, CString::new("trans").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_trans, 1, gl::FALSE, trans.as_ptr());
 			
 			let uni_proj = gl::GetUniformLocation(self.program, CString::new("proj").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_proj, 1, gl::FALSE, proj.as_ptr());
+			
+			let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
+			gl::Uniform1i(tex_loc, gl::TEXTURE0 as i32);
 			
 			gl::DrawArrays(gl::TRIANGLES, 0, self.num_verts as i32);
 		}
@@ -142,6 +144,12 @@ fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint) -> (GLuint, GL
         // Create Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);
         gl::BindVertexArray(vao);
+		
+        let pos_attr = gl::GetAttribLocation(program, CString::new("position").unwrap().as_ptr());
+        gl::EnableVertexAttribArray(pos_attr as GLuint);
+		
+        let tex_attr = gl::GetAttribLocation(program, CString::new("texcoord").unwrap().as_ptr());
+        gl::EnableVertexAttribArray(tex_attr as GLuint);
 
         // Create a Vertex Buffer Object and copy the vertex data to it
         gl::GenBuffers(1, &mut vbo);
@@ -156,36 +164,24 @@ fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint) -> (GLuint, GL
         gl::BindFragDataLocation(program, 0, CString::new("out_color").unwrap().as_ptr());
 
         // Specify the layout of the vertex data
-        let pos_attr = gl::GetAttribLocation(program, CString::new("position").unwrap().as_ptr());
-        gl::EnableVertexAttribArray(pos_attr as GLuint);
         gl::VertexAttribPointer(pos_attr as GLuint,
                                 3,
                                 gl::FLOAT,
                                 gl::FALSE as GLboolean,
-                                0,
-                                ptr::null());
+                                (5 * mem::size_of::<GLfloat>()) as GLsizei,
+                                ptr::null::<GLfloat>() as *const c_void);
+		
+        gl::VertexAttribPointer(tex_attr as GLuint,
+                                2,
+                                gl::FLOAT,
+                                gl::FALSE as GLboolean,
+                                (5 * mem::size_of::<GLfloat>()) as GLsizei,
+                                ptr::null::<GLfloat>().offset(3) as *const c_void);
+								
+        gl::BindVertexArray(0);
     };
 	
 	(vao, vbo)
-}
-
-fn create_texcoord_buffer(texcoord_data: &[GLfloat], program: GLuint) /*-> GLuint*/ {
-    //let mut vao = 0;
-    //let mut vbo = 0;
-
-    unsafe {
-		// FIXME: use VBOs?
-        let tex_attr = gl::GetAttribLocation(program, CString::new("texcoord").unwrap().as_ptr());
-        gl::EnableVertexAttribArray(tex_attr as GLuint);
-        gl::VertexAttribPointer(tex_attr as GLuint,
-                                3,
-                                gl::FLOAT,
-                                gl::FALSE as GLboolean,
-                                0,
-                                texcoord_data.as_ptr() as *const c_void);
-    };
-	
-	//(vao, vbo)
 }
 
 fn create_texture(image: &Image) -> GLuint {
@@ -196,8 +192,10 @@ fn create_texture(image: &Image) -> GLuint {
 		gl::BindTexture(gl::TEXTURE_2D, tex);
 		
 		let slice = &image.data[0..];
-		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, image.width as i32, image.height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
-	}
+		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, image.width as i32, image.height as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
+	};
+	
+	println!("tex {}", tex);
 	
 	tex
 }
