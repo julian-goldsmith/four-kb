@@ -6,7 +6,7 @@ use std::str;
 use std::ffi::CString;
 use cgmath;
 use cgmath::prelude::*;
-use cgmath::{Matrix4, Vector3, Matrix, Deg, Basis3};
+use cgmath::{Matrix4, Vector3, Matrix, Deg, Basis3, Vector2};
 use image::Image;
 
 pub struct Mesh {
@@ -24,8 +24,8 @@ pub struct Mesh {
 
 impl Mesh {
 	pub fn new(vertex_shader: &str, fragment_shader: &str, 
-			   vertex_data: &[GLfloat], 
-			   texcoord_data: &[GLfloat], 
+			   vertex_data: &[Vector3<GLfloat>],
+			   texcoord_data: &[Vector2<GLfloat>],
 			   image: &Image) -> Mesh {
 		let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
 		let fs = compile_shader(fragment_shader, gl::FRAGMENT_SHADER);
@@ -33,8 +33,8 @@ impl Mesh {
 		
 		let tex = create_texture(image);
 	
-		let vbo_verts = create_vbo(vertex_data);
-		let vbo_texcoords = create_vbo(texcoord_data);
+		let vbo_verts = create_vbo3(vertex_data);
+		let vbo_texcoords = create_vbo2(texcoord_data);
 		
 		let vao = create_vao(vbo_verts, vbo_texcoords, program);
 		
@@ -67,7 +67,7 @@ impl Mesh {
 			gl::DrawArrays(gl::TRIANGLES, 0, self.num_verts as i32);
 		};
 		
-		self.transform.rot = self.transform.rot * Basis3::from_angle_z(Deg(0.25));
+		self.transform.rot = self.transform.rot * Basis3::from_angle_z(Deg(-0.375));
 	}
 }
 
@@ -182,14 +182,29 @@ fn bind_attribute(name: &str, vbo: GLuint, num_components: u16, program: GLuint)
 	};
 }
 
-fn create_vbo(data: &[GLfloat]) -> GLuint {
+fn create_vbo2(data: &[Vector2<GLfloat>]) -> GLuint {
 	let mut vbo = 0;
 	
 	unsafe {
         gl::GenBuffers(1, &mut vbo);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(gl::ARRAY_BUFFER,
-                       (data.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
+                       (data.len() * 2 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+                       mem::transmute(&data[0]),
+                       gl::STATIC_DRAW);
+	};
+	
+	vbo
+}
+
+fn create_vbo3(data: &[Vector3<GLfloat>]) -> GLuint {
+	let mut vbo = 0;
+	
+	unsafe {
+        gl::GenBuffers(1, &mut vbo);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::BufferData(gl::ARRAY_BUFFER,
+                       (data.len() * 3 * mem::size_of::<GLfloat>()) as GLsizeiptr,
                        mem::transmute(&data[0]),
                        gl::STATIC_DRAW);
 	};

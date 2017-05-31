@@ -4,7 +4,7 @@ use std::string::String;
 use std::io::{Seek, Read, SeekFrom, Error};
 use gl::types::*;
 use image::Image;
-use cgmath::{Vector3};
+use cgmath::{Vector3, Vector2};
 
 #[derive(Debug)]
 pub struct Md2Header {
@@ -155,21 +155,25 @@ fn read_frames<T: Read + Seek>(mut reader: &mut T, header: &Md2Header) -> Result
 	Ok(frames)
 }
 
-fn compute_frame(header: &Md2Header, tris: &Vec<Md2Triangle>, frames: &Vec<Md2Frame>, texcoords: &Vec<Md2Texcoord>) -> (Vec<GLfloat>, Vec<GLfloat>) {
+fn compute_frame(header: &Md2Header, tris: &Vec<Md2Triangle>, frames: &Vec<Md2Frame>, texcoords: &Vec<Md2Texcoord>) -> (Vec<Vector3<GLfloat>>, Vec<Vector2<GLfloat>>) {
 	let frame = &frames[0];
-	let mut verts_out = Vec::with_capacity(3 * header.num_vertices as usize);
-	let mut texcoords_out = Vec::with_capacity(2 * header.num_vertices as usize);
+	let mut verts_out = Vec::with_capacity(header.num_vertices as usize);
+	let mut texcoords_out = Vec::with_capacity(header.num_vertices as usize);
 	
 	for tri in tris.iter() {
 		for i in 0..3 {
 			let vert = &frame.verts[tri.vertex[i] as usize];
 			
-			verts_out.push(frame.scale.x * vert.v[0] as f32 + frame.translate.x);
-			verts_out.push(frame.scale.y * vert.v[1] as f32 + frame.translate.y);
-			verts_out.push(frame.scale.z * vert.v[2] as f32 + frame.translate.z);
+			verts_out.push(Vector3 {
+				x: frame.scale.x * vert.v[0] as f32 + frame.translate.x,
+				y: frame.scale.y * vert.v[1] as f32 + frame.translate.y,
+				z: frame.scale.z * vert.v[2] as f32 + frame.translate.z,
+			});
 			
-			texcoords_out.push(texcoords[tri.st[i] as usize].s);
-			texcoords_out.push(texcoords[tri.st[i] as usize].t);
+			texcoords_out.push(Vector2 {
+				x: texcoords[tri.st[i] as usize].s,
+				y: texcoords[tri.st[i] as usize].t,
+			});
 		}
 	};
 	

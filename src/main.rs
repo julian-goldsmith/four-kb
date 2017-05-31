@@ -27,7 +27,7 @@ fn main() {
 	unsafe {
 		gl::Enable(gl::DEPTH_TEST);
 	}
-		
+	
 	let image = image::load_image(&Path::new("test.png")).unwrap();
 
 	let mut file = File::open(&Path::new("test.md2")).unwrap();
