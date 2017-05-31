@@ -18,20 +18,19 @@ pub struct Mesh {
 	pub vbo: GLuint,
 	pub tex: GLuint,
 	pub num_verts: u32,
-	pub image: Image,
 	
 	pub transform: cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>,
 }
 
 impl Mesh {
-	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat], image: Image) -> Mesh {
+	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat], texcoord_data: &[GLfloat], image: &Image) -> Mesh {
 		let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
 		let fs = compile_shader(fragment_shader, gl::FRAGMENT_SHADER);
 		let program = link_program(vs, fs);
 		
-		let tex = create_texture(&image);
+		let tex = create_texture(image);
 		
-		let (vao, vbo) = create_vertex_buffer(vertex_data, program, tex);
+		let (vao, vbo) = create_vertex_buffer(vertex_data, texcoord_data, program, tex);
 		
 		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
 			scale: 0.05,
@@ -39,7 +38,7 @@ impl Mesh {
 			disp: Vector3::new(0.0, 0.0, -1.5),
 		};
 		
-		Mesh { program, vs, fs, vao, vbo, tex, num_verts: vertex_data.len() as u32, transform, image }
+		Mesh { program, vs, fs, vao, vbo, tex, num_verts: vertex_data.len() as u32, transform }
 	}
 	
 	pub fn draw(&self, proj: &Matrix4<GLfloat>) {
@@ -137,9 +136,11 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
     }
 }
 
-fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint, tex: GLuint) -> (GLuint, GLuint) {
+fn create_vertex_buffer(vertex_data: &[GLfloat], texcoord_data: &[GLfloat], program: GLuint, tex: GLuint) -> (GLuint, GLuint) {
     let mut vao = 0;
-    let mut vbo = 0;
+	
+	let vbo_verts = create_vbo(vertex_data);
+	let vbo_texcoords = create_vbo(texcoord_data);
 
     unsafe {
         // Create Vertex Array Object
@@ -152,39 +153,43 @@ fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint, tex: GLuint) -
         let tex_attr = gl::GetAttribLocation(program, CString::new("texcoord").unwrap().as_ptr());
         gl::EnableVertexAttribArray(tex_attr as GLuint);
 
-        // Create a Vertex Buffer Object and copy the vertex data to it
-        gl::GenBuffers(1, &mut vbo);
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(gl::ARRAY_BUFFER,
-                       (vertex_data.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
-                       mem::transmute(&vertex_data[0]),
-                       gl::STATIC_DRAW);
-
         // Use shader program
         gl::UseProgram(program);
         gl::BindFragDataLocation(program, 0, CString::new("out_color").unwrap().as_ptr());
 
-        // Specify the layout of the vertex data
+		gl::BindBuffer(gl::ARRAY_BUFFER, vbo_verts);
         gl::VertexAttribPointer(pos_attr as GLuint,
                                 3,
                                 gl::FLOAT,
                                 gl::FALSE as GLboolean,
-                                (5 * mem::size_of::<GLfloat>()) as GLsizei,
-                                ptr::null::<GLfloat>() as *const c_void);
+                                0,
+                                ptr::null());
 		
+		gl::BindBuffer(gl::ARRAY_BUFFER, vbo_texcoords);
         gl::VertexAttribPointer(tex_attr as GLuint,
                                 2,
                                 gl::FLOAT,
                                 gl::FALSE as GLboolean,
-                                (5 * mem::size_of::<GLfloat>()) as GLsizei,
-                                ptr::null::<GLfloat>().offset(3) as *const c_void);
-								
-		gl::BindTexture(gl::TEXTURE_2D, tex);
-								
-        gl::BindVertexArray(0);
+                                0,
+                                ptr::null());
     };
 	
-	(vao, vbo)
+	(vao, vbo_verts)
+}
+
+fn create_vbo(data: &[GLfloat]) -> GLuint {
+	let mut vbo = 0;
+	
+	unsafe {
+        gl::GenBuffers(1, &mut vbo);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::BufferData(gl::ARRAY_BUFFER,
+                       (data.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
+                       mem::transmute(&data[0]),
+                       gl::STATIC_DRAW);
+	};
+	
+	vbo
 }
 
 fn create_texture(image: &Image) -> GLuint {

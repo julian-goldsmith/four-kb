@@ -28,7 +28,7 @@ fn main() {
 
 	let mut file = File::open(&Path::new("test.md2")).unwrap();
 	
-	let mesh = md2::read_md2_model(&mut file, image).unwrap();
+	let mesh = md2::read_md2_model(&mut file, &image).unwrap();
 	
 	let proj = cgmath::perspective(
 		cgmath::Deg(90.0),

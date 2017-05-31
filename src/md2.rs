@@ -184,9 +184,10 @@ fn read_frames<T: Read + Seek>(mut reader: &mut T, header: &md2_header_t) -> Res
 	Ok(frames)
 }
 
-fn compute_frame(header: &md2_header_t, tris: &Vec<md2_triangle_t>, frames: &Vec<md2_frame_t>, texcoords: &Vec<md2_texcoord_t>) -> Vec<GLfloat> {
+fn compute_frame(header: &md2_header_t, tris: &Vec<md2_triangle_t>, frames: &Vec<md2_frame_t>, texcoords: &Vec<md2_texcoord_t>) -> (Vec<GLfloat>, Vec<GLfloat>) {
 	let frame = &frames[0];
-	let mut verts_out = Vec::with_capacity(5 * header.num_vertices as usize);
+	let mut verts_out = Vec::with_capacity(3 * header.num_vertices as usize);
+	let mut texcoords_out = Vec::with_capacity(2 * header.num_vertices as usize);
 	
 	for tri in tris.iter() {
 		for i in 0..3 {
@@ -196,12 +197,12 @@ fn compute_frame(header: &md2_header_t, tris: &Vec<md2_triangle_t>, frames: &Vec
 			verts_out.push(frame.scale.y * vert.v[1] as f32 + frame.translate.y);
 			verts_out.push(frame.scale.z * vert.v[2] as f32 + frame.translate.z);
 			
-			verts_out.push(texcoords[tri.st[i] as usize].s as f32 / header.skinwidth as f32);
-			verts_out.push(texcoords[tri.st[i] as usize].t as f32 / header.skinheight as f32);
+			texcoords_out.push(texcoords[tri.st[i] as usize].s as f32 / header.skinwidth as f32);
+			texcoords_out.push(texcoords[tri.st[i] as usize].t as f32 / header.skinheight as f32);
 		}
 	};
 	
-	verts_out
+	(verts_out, texcoords_out)
 }
 
 // Shader sources
@@ -230,14 +231,14 @@ static FS_SRC: &'static str = "#version 150
 		out_color = texture(tex, Texcoord);
     }";
 
-pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T, tex: Image) -> Result<Mesh,()> {
+pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T, tex: &Image) -> Result<Mesh,()> {
 	let header = read_header(&mut reader).unwrap();
 	let skins = read_skins(&mut reader, &header).unwrap();
 	let texcoords = read_texcoords(&mut reader, &header).unwrap();
 	let tris = read_triangles(&mut reader, &header).unwrap();
 	let frames = read_frames(&mut reader, &header).unwrap();
 	
-	let computed_verts = compute_frame(&header, &tris, &frames, &texcoords);
+	let (computed_verts, computed_texcoords) = compute_frame(&header, &tris, &frames, &texcoords);
 	
-	Ok(Mesh::new(VS_SRC, FS_SRC, &computed_verts, tex))
+	Ok(Mesh::new(VS_SRC, FS_SRC, &computed_verts, &computed_texcoords, tex))
 }
