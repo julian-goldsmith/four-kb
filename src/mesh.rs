@@ -48,7 +48,7 @@ impl Mesh {
 	}
 	
 	pub fn draw(&mut self, proj: &Matrix4<GLfloat>) {
-		let trans: Matrix4<GLfloat> = self.transform.clone().into();
+		let trans = Matrix4::from(self.transform);
 		
 		unsafe {
 			gl::UseProgram(self.program);
