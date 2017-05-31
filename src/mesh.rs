@@ -18,19 +18,20 @@ pub struct Mesh {
 	pub vbo: GLuint,
 	pub tex: GLuint,
 	pub num_verts: u32,
+	pub image: Image,
 	
 	pub transform: cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>,
 }
 
 impl Mesh {
-	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat], image: &Image) -> Mesh {
+	pub fn new(vertex_shader: &str, fragment_shader: &str, vertex_data: &[GLfloat], image: Image) -> Mesh {
 		let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
 		let fs = compile_shader(fragment_shader, gl::FRAGMENT_SHADER);
 		let program = link_program(vs, fs);
 		
-		let (vao, vbo) = create_vertex_buffer(vertex_data, program);
+		let tex = create_texture(&image);
 		
-		let tex = create_texture(image);
+		let (vao, vbo) = create_vertex_buffer(vertex_data, program, tex);
 		
 		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
 			scale: 0.05,
@@ -38,7 +39,7 @@ impl Mesh {
 			disp: Vector3::new(0.0, 0.0, -1.5),
 		};
 		
-		Mesh { program, vs, fs, vao, vbo, tex, num_verts: vertex_data.len() as u32, transform }
+		Mesh { program, vs, fs, vao, vbo, tex, num_verts: vertex_data.len() as u32, transform, image }
 	}
 	
 	pub fn draw(&self, proj: &Matrix4<GLfloat>) {
@@ -56,7 +57,7 @@ impl Mesh {
 			gl::UniformMatrix4fv(uni_proj, 1, gl::FALSE, proj.as_ptr());
 			
 			let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
-			gl::Uniform1i(tex_loc, gl::TEXTURE0 as i32);
+			gl::Uniform1i(tex_loc, 0);
 			
 			gl::DrawArrays(gl::TRIANGLES, 0, self.num_verts as i32);
 		}
@@ -136,7 +137,7 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
     }
 }
 
-fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint) -> (GLuint, GLuint) {
+fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint, tex: GLuint) -> (GLuint, GLuint) {
     let mut vao = 0;
     let mut vbo = 0;
 
@@ -178,6 +179,8 @@ fn create_vertex_buffer(vertex_data: &[GLfloat], program: GLuint) -> (GLuint, GL
                                 (5 * mem::size_of::<GLfloat>()) as GLsizei,
                                 ptr::null::<GLfloat>().offset(3) as *const c_void);
 								
+		gl::BindTexture(gl::TEXTURE_2D, tex);
+								
         gl::BindVertexArray(0);
     };
 	
@@ -193,9 +196,10 @@ fn create_texture(image: &Image) -> GLuint {
 		
 		let slice = &image.data[0..];
 		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, image.width as i32, image.height as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
+		
+		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 	};
-	
-	println!("tex {}", tex);
 	
 	tex
 }

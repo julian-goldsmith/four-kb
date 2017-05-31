@@ -227,10 +227,10 @@ static FS_SRC: &'static str = "#version 150
 	uniform sampler2D tex;
 	
     void main() {
-		out_color = vec4(Texcoord, 0.0, 1.0);/*texture(tex, Texcoord);*/
+		out_color = texture(tex, Texcoord);
     }";
 
-pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T, tex: &Image) -> Result<Mesh,()> {
+pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T, tex: Image) -> Result<Mesh,()> {
 	let header = read_header(&mut reader).unwrap();
 	let skins = read_skins(&mut reader, &header).unwrap();
 	let texcoords = read_texcoords(&mut reader, &header).unwrap();
