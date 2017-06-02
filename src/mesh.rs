@@ -189,7 +189,7 @@ fn create_vbo2(data: &[Vector2<GLfloat>]) -> GLuint {
         gl::GenBuffers(1, &mut vbo);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(gl::ARRAY_BUFFER,
-                       (data.len() * 2 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+                       (data.len() * mem::size_of::<Vector2<GLfloat>>()) as GLsizeiptr,
                        mem::transmute(&data[0]),
                        gl::STATIC_DRAW);
 	};
@@ -204,7 +204,7 @@ fn create_vbo3(data: &[Vector3<GLfloat>]) -> GLuint {
         gl::GenBuffers(1, &mut vbo);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(gl::ARRAY_BUFFER,
-                       (data.len() * 3 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+                       (data.len() * mem::size_of::<Vector3<GLfloat>>()) as GLsizeiptr,
                        mem::transmute(&data[0]),
                        gl::STATIC_DRAW);
 	};
