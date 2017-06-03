@@ -50,6 +50,7 @@ impl Mesh {
 	pub fn draw(&mut self, proj: &Matrix4<GLfloat>) {
 		let trans = Matrix4::from(self.transform);
 		
+        // TODO: use glVertexAttribFormat, glVertexAttribBinding, and glBindVertexBuffers
 		unsafe {
 			gl::UseProgram(self.program);
 			gl::BindVertexArray(self.vao);
@@ -152,12 +153,12 @@ fn create_vao(vbo_verts: GLuint, vbo_texcoords: GLuint, program: GLuint) -> GLui
         gl::GenVertexArrays(1, &mut vao);
         gl::BindVertexArray(vao);
     };
-	
+
 	bind_attribute("position", vbo_verts, 3, program);
 	bind_attribute("texcoord", vbo_texcoords, 2, program);
-	
+
 	set_frag_data_name("out_color", program);
-	
+
 	vao
 }
 
@@ -220,7 +221,7 @@ fn create_texture(image: &Image) -> GLuint {
 		gl::BindTexture(gl::TEXTURE_2D, tex);
 		
 		let slice = &image.data[0..];
-		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, image.width as i32, image.height as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
+		gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, image.width as i32, image.height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
 		
 		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
 		gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);

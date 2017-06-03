@@ -3,14 +3,23 @@ extern crate cgmath;
 extern crate gl;
 extern crate glutin;
 extern crate png;
+extern crate fbx_direct;
 mod mesh;
 mod md2;
 mod image;
+mod fbx;
 
 use std::fs::File;
 use std::path::Path;
+use fbx_direct::reader::EventReader;
 
 fn main() {
+    let fbx = File::open(&Path::new("cube.fbx")).unwrap();
+
+    fbx::read(fbx);
+
+    return;
+
 	let events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new().
 		with_vsync().
