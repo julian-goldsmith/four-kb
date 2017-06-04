@@ -16,7 +16,9 @@ use fbx_direct::reader::EventReader;
 fn main() {
     let fbx = File::open(&Path::new("cube.fbx")).unwrap();
 
-    fbx::read(fbx);
+    let mdl = fbx::read(fbx);
+    //println!("{:?}", mdl);
+    mdl.print(0);
 
     return;
 
