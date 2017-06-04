@@ -14,7 +14,7 @@ pub enum NodeType {
     Definitions,
     Objects,
     Geometry,
-    PolygonVertexIndex(Vec<Vec<i32>>),
+    PolygonVertexIndex(Vec<i32>),
     Vertices(Vec<Vector3<f32>>),
     LayerElementNormal,
     Normals(Vec<Vector3<f32>>),
@@ -45,15 +45,7 @@ impl FbxNode {
         for child in &self.children {
             match &child.node_type {
                 &PolygonVertexIndex(ref indices) => 
-                    return Some(
-                        indices.
-                        iter().
-                        fold(Vec::new(), 
-                             |mut acc, arr| 
-                                { 
-                                    acc.append(&mut arr.clone());
-                                    acc 
-                                })),
+                    return Some(indices.clone()),
                 _ => match child.get_indices() {
                     Some(indices) => return Some(indices),
                     _ => ()
@@ -127,16 +119,8 @@ fn parse_indices(mut properties: Vec<OwnedProperty>) -> FbxNode {
         _ => panic!("Bad property in parse_vertices"),
     };
 
-    let polysize = if indices[2] < 0 {
-        3
-    } else {
-        4
-    };
-
-    let idx = indices.chunks(polysize).map(|chunk| chunk.iter().cloned().map(|i| i.abs()).collect()).collect();
-
     FbxNode {
-        node_type: PolygonVertexIndex(idx),
+        node_type: PolygonVertexIndex(indices),
         properties: Vec::new(),
         children: Vec::new(),
     }

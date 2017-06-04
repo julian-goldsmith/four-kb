@@ -10,7 +10,6 @@ mod fbx;
 
 use std::fs::File;
 use std::path::Path;
-use fbx_direct::reader::EventReader;
 use mesh::Mesh;
 
 fn main() {

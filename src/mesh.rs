@@ -50,7 +50,7 @@ impl Mesh {
 		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
 			scale: 1.0,
 			rot: Basis3::from_angle_x(Deg(-90.0)),
-			disp: Vector3::new(0.0, 0.0, -1.75),
+			disp: Vector3::new(0.0, 0.0, -2.75),
 		};
 
 		Mesh { program, vs, fs, vao, vbo_verts, vbo_texcoords, ibo, tex, num_verts: index_data.len() as u32, transform }
@@ -64,6 +64,7 @@ impl Mesh {
 			gl::UseProgram(self.program);
 			gl::BindVertexArray(self.vao);
 			gl::BindTexture(gl::TEXTURE_2D, self.tex);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ibo);
 
 			let uni_trans = gl::GetUniformLocation(self.program, CString::new("trans").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_trans, 1, gl::FALSE, trans.as_ptr());
@@ -74,7 +75,7 @@ impl Mesh {
 			//let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
 			//gl::Uniform1i(tex_loc, 0);
 			
-            gl::DrawElements(gl::QUADS, self.num_verts as i32, gl::INT, ptr::null());
+            gl::DrawElements(gl::QUADS, self.num_verts as i32, gl::UNSIGNED_INT, ptr::null());
 		};
 		
 		self.transform.rot = self.transform.rot * Basis3::from_angle_z(Deg(-0.375));
@@ -91,6 +92,7 @@ impl Drop for Mesh {
 			gl::DeleteBuffers(1, &self.vbo_texcoords);
 			gl::DeleteBuffers(1, &self.ibo);
 			gl::DeleteVertexArrays(1, &self.vao);
+			gl::DeleteTextures(1, &self.tex);
 		}
 	}
 }
@@ -233,8 +235,6 @@ fn create_vbo3(data: &[Vector3<GLfloat>]) -> GLuint {
 
 fn create_ibo(data: &[i32]) -> GLuint {
 	let mut ibo = 0;
-
-    println!("indices: {}", data.len());
 	
 	unsafe {
         gl::GenBuffers(1, &mut ibo);
