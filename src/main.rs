@@ -12,15 +12,12 @@ mod fbx;
 use std::fs::File;
 use std::path::Path;
 use fbx_direct::reader::EventReader;
+use mesh::Mesh;
 
 fn main() {
     let fbx = File::open(&Path::new("cube.fbx")).unwrap();
 
     let mdl = fbx::read(fbx);
-    //println!("{:?}", mdl);
-    mdl.print(0);
-
-    return;
 
 	let events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new().
@@ -38,12 +35,8 @@ fn main() {
 	unsafe {
 		gl::Enable(gl::DEPTH_TEST);
 	}
-	
-	let image = image::load_image(&Path::new("test.png")).unwrap();
 
-	let mut file = File::open(&Path::new("test.md2")).unwrap();
-	
-	let mut mesh = md2::read_md2_model(&mut file, &image).unwrap();
+	let mut mesh: Mesh = mdl.into();
 	
 	let proj = cgmath::perspective(
 		cgmath::Deg(90.0),

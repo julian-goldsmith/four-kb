@@ -13,10 +13,16 @@ pub struct Mesh {
 	pub program: GLuint,
 	pub vs: GLuint,
 	pub fs: GLuint,
+
 	pub vao: GLuint,
+
+    pub ibo: GLuint,
+
 	pub vbo_verts: GLuint,
 	pub vbo_texcoords: GLuint,
+
 	pub tex: GLuint,
+
 	pub num_verts: u32,
 	
 	pub transform: cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>,
@@ -25,6 +31,7 @@ pub struct Mesh {
 impl Mesh {
 	pub fn new(vertex_shader: &str, fragment_shader: &str, 
 			   vertex_data: &[Vector3<GLfloat>],
+               index_data: &[i32],
 			   texcoord_data: &[Vector2<GLfloat>],
 			   image: &Image) -> Mesh {
 		let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
@@ -35,16 +42,18 @@ impl Mesh {
 	
 		let vbo_verts = create_vbo3(vertex_data);
 		let vbo_texcoords = create_vbo2(texcoord_data);
+
+        let ibo = create_ibo(index_data);
 		
 		let vao = create_vao(vbo_verts, vbo_texcoords, program);
 		
 		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
-			scale: 0.05,
+			scale: 1.0,
 			rot: Basis3::from_angle_x(Deg(-90.0)),
 			disp: Vector3::new(0.0, 0.0, -1.75),
 		};
-		
-		Mesh { program, vs, fs, vao, vbo_verts, vbo_texcoords, tex, num_verts: vertex_data.len() as u32, transform }
+
+		Mesh { program, vs, fs, vao, vbo_verts, vbo_texcoords, ibo, tex, num_verts: index_data.len() as u32, transform }
 	}
 	
 	pub fn draw(&mut self, proj: &Matrix4<GLfloat>) {
@@ -55,17 +64,17 @@ impl Mesh {
 			gl::UseProgram(self.program);
 			gl::BindVertexArray(self.vao);
 			gl::BindTexture(gl::TEXTURE_2D, self.tex);
-			
+
 			let uni_trans = gl::GetUniformLocation(self.program, CString::new("trans").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_trans, 1, gl::FALSE, trans.as_ptr());
 			
 			let uni_proj = gl::GetUniformLocation(self.program, CString::new("proj").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_proj, 1, gl::FALSE, proj.as_ptr());
 			
-			let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
-			gl::Uniform1i(tex_loc, 0);
+			//let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
+			//gl::Uniform1i(tex_loc, 0);
 			
-			gl::DrawArrays(gl::TRIANGLES, 0, self.num_verts as i32);
+            gl::DrawElements(gl::QUADS, self.num_verts as i32, gl::INT, ptr::null());
 		};
 		
 		self.transform.rot = self.transform.rot * Basis3::from_angle_z(Deg(-0.375));
@@ -80,6 +89,7 @@ impl Drop for Mesh {
 			gl::DeleteShader(self.vs);
 			gl::DeleteBuffers(1, &self.vbo_verts);
 			gl::DeleteBuffers(1, &self.vbo_texcoords);
+			gl::DeleteBuffers(1, &self.ibo);
 			gl::DeleteVertexArrays(1, &self.vao);
 		}
 	}
@@ -155,7 +165,7 @@ fn create_vao(vbo_verts: GLuint, vbo_texcoords: GLuint, program: GLuint) -> GLui
     };
 
 	bind_attribute("position", vbo_verts, 3, program);
-	bind_attribute("texcoord", vbo_texcoords, 2, program);
+	//bind_attribute("texcoord", vbo_texcoords, 2, program);
 
 	set_frag_data_name("out_color", program);
 
@@ -185,6 +195,10 @@ fn bind_attribute(name: &str, vbo: GLuint, num_components: u16, program: GLuint)
 
 fn create_vbo2(data: &[Vector2<GLfloat>]) -> GLuint {
 	let mut vbo = 0;
+
+    if data.len() == 0 {
+        return 0;
+    }
 	
 	unsafe {
         gl::GenBuffers(1, &mut vbo);
@@ -201,6 +215,10 @@ fn create_vbo2(data: &[Vector2<GLfloat>]) -> GLuint {
 fn create_vbo3(data: &[Vector3<GLfloat>]) -> GLuint {
 	let mut vbo = 0;
 	
+    if data.len() == 0 {
+        return 0;
+    }
+	
 	unsafe {
         gl::GenBuffers(1, &mut vbo);
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
@@ -211,6 +229,23 @@ fn create_vbo3(data: &[Vector3<GLfloat>]) -> GLuint {
 	};
 	
 	vbo
+}
+
+fn create_ibo(data: &[i32]) -> GLuint {
+	let mut ibo = 0;
+
+    println!("indices: {}", data.len());
+	
+	unsafe {
+        gl::GenBuffers(1, &mut ibo);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo);
+        gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,
+                       (data.len() * mem::size_of::<i32>()) as GLsizeiptr,
+                       mem::transmute(&data[0]),
+                       gl::STATIC_DRAW);
+	};
+	
+	ibo
 }
 
 fn create_texture(image: &Image) -> GLuint {

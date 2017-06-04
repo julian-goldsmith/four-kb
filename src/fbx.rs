@@ -41,11 +41,36 @@ impl FbxNode {
         }
     }
 
+    pub fn get_indices(&self) -> Option<Vec<i32>> {
+        for child in &self.children {
+            match &child.node_type {
+                &PolygonVertexIndex(ref indices) => 
+                    return Some(
+                        indices.
+                        iter().
+                        fold(Vec::new(), 
+                             |mut acc, arr| 
+                                { 
+                                    acc.append(&mut arr.clone());
+                                    acc 
+                                })),
+                _ => match child.get_indices() {
+                    Some(indices) => return Some(indices),
+                    _ => ()
+                },
+            }
+        };
+        None
+    }
+
     pub fn get_vertices(&self) -> Option<Vec<Vector3<f32>>> {
         for child in &self.children {
             match &child.node_type {
                 &Vertices(ref verts) => return Some(verts.clone()),
-                _ => (),
+                _ => match child.get_vertices() {
+                    Some(verts) => return Some(verts),
+                    _ => (),
+                },
             }
         };
         None
@@ -170,11 +195,37 @@ pub fn read<T: Read>(reader: T) -> FbxNode {
     return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, false);
 }
 
+static VS_SRC: &'static str = "#version 150
+    in vec3 position;
+	in vec2 texcoord;
+	
+	out vec2 Texcoord;
+	
+	uniform mat4 trans;
+	uniform mat4 proj;
+	
+    void main() {
+		Texcoord = texcoord;
+		gl_Position = proj * trans * vec4(position, 1.0);
+    }";
+
+static FS_SRC: &'static str = "#version 150
+	/*in vec2 Texcoord;*/
+	
+    out vec4 out_color;
+	
+	uniform sampler2D tex;
+	
+    void main() {
+		out_color = vec4(1.0, 0.0, 0.0, 1.0);//texture(tex, Texcoord);
+    }";
+
 impl From<FbxNode> for Mesh {
     fn from(root: FbxNode) -> Mesh {
         let vertex_data = root.get_vertices().unwrap();
+        let index_data = root.get_indices().unwrap();
         let texcoord_data = Vec::<Vector2<f32>>::new();
         let image = image::load_image(&Path::new("test.png")).unwrap();
-        Mesh::new("", "", &vertex_data, &texcoord_data, &image)
+        Mesh::new(VS_SRC, FS_SRC, &vertex_data, &index_data, &texcoord_data, &image)
     }
 }

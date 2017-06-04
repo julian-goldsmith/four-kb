@@ -214,5 +214,6 @@ pub fn read_md2_model<T: Read + Seek>(mut reader: &mut T, tex: &Image) -> Result
 	
 	let (computed_verts, computed_texcoords) = compute_frame(&header, &tris, &frames, &texcoords);
 	
-	Ok(Mesh::new(VS_SRC, FS_SRC, &computed_verts, &computed_texcoords, tex))
+    Err(())
+	//Ok(Mesh::new(VS_SRC, FS_SRC, &computed_verts, &computed_texcoords, tex))
 }
