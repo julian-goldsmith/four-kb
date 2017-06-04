@@ -5,7 +5,6 @@ extern crate glutin;
 extern crate png;
 extern crate fbx_direct;
 mod mesh;
-mod md2;
 mod image;
 mod fbx;
 
