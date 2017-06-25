@@ -80,6 +80,10 @@ impl FbxNode {
         };
         None
 	}
+	
+	pub fn get_texcoords(&self) -> Option<Vec<Vector2<f32>>> {
+		Some(Vec::<Vector2<f32>>::new())
+	}
 }
 
 fn parse_normals(mut properties: Vec<OwnedProperty>) -> FbxNode {
@@ -256,7 +260,7 @@ impl From<FbxNode> for Mesh {
         let vertex_data = root.get_vertices().unwrap();
 		let normal_data = root.get_normals().unwrap();
         let (geom_type, index_data) = root.get_indices().unwrap();
-        let texcoord_data = Vec::<Vector2<f32>>::new();
+        let texcoord_data = root.get_texcoords().unwrap();
         let image = image::load_image(&Path::new("monkey.png")).unwrap();
 		
         Mesh::new(VS_SRC, FS_SRC, &vertex_data, &normal_data, &index_data, &texcoord_data, &image, geom_type)

@@ -87,8 +87,8 @@ impl Mesh {
 			let uni_view = gl::GetUniformLocation(self.program, CString::new("view").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_view, 1, gl::FALSE, view.as_ptr());
 			
-			//let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
-			//gl::Uniform1i(tex_loc, 0);
+			let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
+			gl::Uniform1i(tex_loc, 0);
 			
 			let geom_type = match self.geom_type {
 				GeometryType::Tris => gl::TRIANGLES,
@@ -187,7 +187,7 @@ fn create_vao(vbo_verts: GLuint, vbo_normal: GLuint, vbo_texcoords: GLuint, prog
 
 	bind_attribute("position", vbo_verts, 3, program);
 	bind_attribute("normal", vbo_normal, 3, program);
-	//bind_attribute("texcoord", vbo_texcoords, 2, program);
+	bind_attribute("texcoord", vbo_texcoords, 2, program);
 
 	set_frag_data_name("out_color", program);
 
