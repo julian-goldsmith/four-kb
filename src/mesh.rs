@@ -9,6 +9,12 @@ use cgmath::prelude::*;
 use cgmath::{Matrix4, Vector3, Matrix, Deg, Basis3, Vector2};
 use image::Image;
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum GeometryType {
+	Tris,
+	Quads,
+}
+
 pub struct Mesh {
 	pub program: GLuint,
 	pub vs: GLuint,
@@ -19,10 +25,12 @@ pub struct Mesh {
     pub ibo: GLuint,
 
 	pub vbo_verts: GLuint,
+	pub vbo_normals: GLuint,
 	pub vbo_texcoords: GLuint,
 
 	pub tex: GLuint,
 
+	pub geom_type: GeometryType,
 	pub num_verts: u32,
 	
 	pub transform: cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>,
@@ -31,9 +39,11 @@ pub struct Mesh {
 impl Mesh {
 	pub fn new(vertex_shader: &str, fragment_shader: &str, 
 			   vertex_data: &[Vector3<GLfloat>],
+			   normal_data: &[Vector3<GLfloat>],
                index_data: &[i32],
 			   texcoord_data: &[Vector2<GLfloat>],
-			   image: &Image) -> Mesh {
+			   image: &Image,
+			   geom_type: GeometryType) -> Mesh {
 		let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
 		let fs = compile_shader(fragment_shader, gl::FRAGMENT_SHADER);
 		let program = link_program(vs, fs);
@@ -41,11 +51,12 @@ impl Mesh {
 		let tex = create_texture(image);
 	
 		let vbo_verts = create_vbo3(vertex_data);
+		let vbo_normals = create_vbo3(normal_data);
 		let vbo_texcoords = create_vbo2(texcoord_data);
 
         let ibo = create_ibo(index_data);
 		
-		let vao = create_vao(vbo_verts, vbo_texcoords, program);
+		let vao = create_vao(vbo_verts, vbo_normals, vbo_texcoords, program);
 		
 		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
 			scale: 1.0,
@@ -53,11 +64,12 @@ impl Mesh {
 			disp: Vector3::new(0.0, 0.0, -2.75),
 		};
 
-		Mesh { program, vs, fs, vao, vbo_verts, vbo_texcoords, ibo, tex, num_verts: index_data.len() as u32, transform }
+		Mesh { program, vs, fs, vao, vbo_verts, vbo_normals, vbo_texcoords, ibo, tex, num_verts: index_data.len() as u32, geom_type, transform }
 	}
 	
 	pub fn draw(&mut self, proj: &Matrix4<GLfloat>) {
 		let trans = Matrix4::from(self.transform);
+		let view = <cgmath::Matrix4<f32> as One>::one();
 		
         // TODO: use glVertexAttribFormat, glVertexAttribBinding, and glBindVertexBuffers
 		unsafe {
@@ -72,10 +84,17 @@ impl Mesh {
 			let uni_proj = gl::GetUniformLocation(self.program, CString::new("proj").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_proj, 1, gl::FALSE, proj.as_ptr());
 			
+			let uni_view = gl::GetUniformLocation(self.program, CString::new("view").unwrap().as_ptr());
+			gl::UniformMatrix4fv(uni_view, 1, gl::FALSE, view.as_ptr());
+			
 			//let tex_loc = gl::GetUniformLocation(self.program, CString::new("tex").unwrap().as_ptr());
 			//gl::Uniform1i(tex_loc, 0);
 			
-            gl::DrawElements(gl::QUADS, self.num_verts as i32, gl::UNSIGNED_INT, ptr::null());
+			let geom_type = match self.geom_type {
+				GeometryType::Tris => gl::TRIANGLES,
+				GeometryType::Quads => gl::QUADS,
+			};
+            gl::DrawElements(geom_type, self.num_verts as i32, gl::UNSIGNED_INT, ptr::null());
 		};
 		
 		self.transform.rot = self.transform.rot * Basis3::from_angle_z(Deg(-0.375));
@@ -158,7 +177,7 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
     }
 }
 
-fn create_vao(vbo_verts: GLuint, vbo_texcoords: GLuint, program: GLuint) -> GLuint {
+fn create_vao(vbo_verts: GLuint, vbo_normal: GLuint, vbo_texcoords: GLuint, program: GLuint) -> GLuint {
     let mut vao = 0;
 
     unsafe {
@@ -167,6 +186,7 @@ fn create_vao(vbo_verts: GLuint, vbo_texcoords: GLuint, program: GLuint) -> GLui
     };
 
 	bind_attribute("position", vbo_verts, 3, program);
+	bind_attribute("normal", vbo_normal, 3, program);
 	//bind_attribute("texcoord", vbo_texcoords, 2, program);
 
 	set_frag_data_name("out_color", program);

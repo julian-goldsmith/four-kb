@@ -3,7 +3,7 @@ use std::io::Read;
 use std::convert::From;
 use fbx_direct::reader::{EventReader, FbxEvent, Error};
 use fbx_direct::common::OwnedProperty;
-use mesh::Mesh;
+use mesh::{GeometryType, Mesh};
 use cgmath::{Vector3, Vector2};
 use image;
 use std::path::Path;
@@ -14,7 +14,7 @@ pub enum NodeType {
     Definitions,
     Objects,
     Geometry,
-    PolygonVertexIndex(Vec<i32>),
+    PolygonVertexIndex(GeometryType, Vec<i32>),
     Vertices(Vec<Vector3<f32>>),
     LayerElementNormal,
     Normals(Vec<Vector3<f32>>),
@@ -34,18 +34,18 @@ impl FbxNode {
     pub fn print(&self, depth: u32) {
         let spaces = (0..depth).fold(String::from(""), |acc, _| acc + "  ");
 
-        println!("{} {:?}", &spaces, &self.node_type);
+        println!("{} {:?} {:?}", &spaces, &self.node_type, &self.properties);
 
         for child in &self.children {
             child.print(depth + 1);
         }
     }
 
-    pub fn get_indices(&self) -> Option<Vec<i32>> {
+    pub fn get_indices(&self) -> Option<(GeometryType, Vec<i32>)> {
         for child in &self.children {
             match &child.node_type {
-                &PolygonVertexIndex(ref indices) => 
-                    return Some(indices.clone()),
+                &PolygonVertexIndex(ref geom_type, ref indices) => 
+                    return Some((*geom_type, indices.clone())),
                 _ => match child.get_indices() {
                     Some(indices) => return Some(indices),
                     _ => ()
@@ -67,6 +67,19 @@ impl FbxNode {
         };
         None
     }
+	
+	pub fn get_normals(&self) -> Option<Vec<Vector3<f32>>> {
+        for child in &self.children {
+            match &child.node_type {
+                &Normals(ref verts) => return Some(verts.clone()),
+                _ => match child.get_vertices() {
+                    Some(verts) => return Some(verts),
+                    _ => (),
+                },
+            }
+        };
+        None
+	}
 }
 
 fn parse_normals(mut properties: Vec<OwnedProperty>) -> FbxNode {
@@ -118,12 +131,17 @@ fn parse_indices(mut properties: Vec<OwnedProperty>) -> FbxNode {
         OwnedProperty::VecI32(indices) => indices,
         _ => panic!("Bad property in parse_vertices"),
     };
-
-    FbxNode {
-        node_type: PolygonVertexIndex(indices),
-        properties: Vec::new(),
-        children: Vec::new(),
-    }
+	
+	let geom_type = match indices[2] < 0 {
+		true => GeometryType::Tris,
+		false => GeometryType::Quads,
+	};
+	
+	FbxNode {
+		node_type: PolygonVertexIndex(geom_type, indices.iter().cloned().map(|i| if i < 0 { i.abs() - 1 } else { i }).collect()),
+		properties: Vec::new(),
+		children: Vec::new(),
+	}
 }
 
 fn parse_other(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
@@ -176,40 +194,71 @@ pub fn read<T: Read>(reader: T) -> FbxNode {
 
     let mut events = fbr.into_iter();
 
-    return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, false);
+    return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, true);
 }
 
 static VS_SRC: &'static str = "#version 150
     in vec3 position;
+    in vec3 normal;
 	in vec2 texcoord;
 	
 	out vec2 Texcoord;
+	out vec3 Position_worldspace;
+	out vec3 EyeDirection_cameraspace;
+	out vec3 LightDirection_cameraspace;
+	out vec3 Normal_cameraspace;
 	
 	uniform mat4 trans;
 	uniform mat4 proj;
+	uniform mat4 view;
 	
     void main() {
+		mat4 mvp = proj * trans * view;
+		
+		vec3 LightPosition_worldspace = vec3(0, 0, 0);
+		
+		Position_worldspace = (trans * vec4(position, 1)).xyz;
+		
+		vec3 vertexPosition_cameraspace = (view * trans * vec4(position, 1)).xyz;
+		EyeDirection_cameraspace = vec3(0, 0, 0) - vertexPosition_cameraspace;
+		
+		vec3 LightPosition_cameraspace = (view * vec4(LightPosition_worldspace, 1)).xyz;
+		LightDirection_cameraspace = normalize(LightPosition_cameraspace + EyeDirection_cameraspace);
+		
+		Normal_cameraspace = normalize((view * trans * vec4(normal, 0)).xyz);
+		
 		Texcoord = texcoord;
-		gl_Position = proj * trans * vec4(position, 1.0);
+		gl_Position = mvp * vec4(position, 1.0);
     }";
 
 static FS_SRC: &'static str = "#version 150
-	/*in vec2 Texcoord;*/
+	in vec2 Texcoord;
+	in vec3 Position_worldspace;
+	in vec3 EyeDirection_cameraspace;
+	in vec3 LightDirection_cameraspace;
+	in vec3 Normal_cameraspace;
 	
     out vec4 out_color;
 	
 	uniform sampler2D tex;
 	
     void main() {
-		out_color = vec4(1.0, 0.0, 0.0, 1.0);//texture(tex, Texcoord);
+		float cosTheta = clamp(dot(Normal_cameraspace, LightDirection_cameraspace), 0, 1);
+		vec4 mat_color = vec4(0.7, 0.2, 0.2, 1.0);
+		vec4 light_color = vec4(0.6, 0.6, 0.6, 1.0);
+		vec4 ambient_color = vec4(0.1, 0.1, 0.1, 0.1);
+		
+		out_color = mat_color * ambient_color + mat_color * light_color * cosTheta;//texture(tex, Texcoord);
     }";
 
 impl From<FbxNode> for Mesh {
     fn from(root: FbxNode) -> Mesh {
         let vertex_data = root.get_vertices().unwrap();
-        let index_data = root.get_indices().unwrap();
+		let normal_data = root.get_normals().unwrap();
+        let (geom_type, index_data) = root.get_indices().unwrap();
         let texcoord_data = Vec::<Vector2<f32>>::new();
-        let image = image::load_image(&Path::new("test.png")).unwrap();
-        Mesh::new(VS_SRC, FS_SRC, &vertex_data, &index_data, &texcoord_data, &image)
+        let image = image::load_image(&Path::new("monkey.png")).unwrap();
+		
+        Mesh::new(VS_SRC, FS_SRC, &vertex_data, &normal_data, &index_data, &texcoord_data, &image, geom_type)
     }
 }

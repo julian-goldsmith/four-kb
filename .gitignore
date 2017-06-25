@@ -5,3 +5,5 @@ Cargo.lock
 *.md2
 *.bmp
 *.png
+*.fbx
+*.blend

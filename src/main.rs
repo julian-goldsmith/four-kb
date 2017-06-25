@@ -13,7 +13,7 @@ use std::path::Path;
 use mesh::Mesh;
 
 fn main() {
-    let fbx = File::open(&Path::new("cube.fbx")).unwrap();
+    let fbx = File::open(&Path::new("monkey.fbx")).unwrap();
 
     let mdl = fbx::read(fbx);
 
