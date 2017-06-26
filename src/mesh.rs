@@ -8,6 +8,7 @@ use cgmath;
 use cgmath::prelude::*;
 use cgmath::{Matrix4, Vector3, Matrix, Deg, Basis3, Vector2};
 use image::Image;
+use gfx::*;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum GeometryType {
@@ -20,13 +21,9 @@ pub struct Mesh {
 	pub vs: GLuint,
 	pub fs: GLuint,
 
-	pub vao: GLuint,
+	pub vao: VAO,
 
-    pub ibo: GLuint,
-
-	pub vbo_verts: GLuint,
-	pub vbo_normals: GLuint,
-	pub vbo_texcoords: GLuint,
+    pub ibo: IBO,
 
 	pub tex: GLuint,
 
@@ -50,13 +47,13 @@ impl Mesh {
 		
 		let tex = create_texture(image);
 	
-		let vbo_verts = create_vbo3(vertex_data);
-		let vbo_normals = create_vbo3(normal_data);
-		let vbo_texcoords = create_vbo2(texcoord_data);
+		let verts = VBO::new(vertex_data).unwrap();
+		let normals = VBO::new(normal_data).unwrap();
+		let texcoords = VBO { id: 0 };//VBO::new(texcoord_data).unwrap();
 
-        let ibo = create_ibo(index_data);
+        let ibo = IBO::new(index_data).unwrap();
 		
-		let vao = create_vao(vbo_verts, vbo_normals, vbo_texcoords, program);
+		let vao = VAO::new(verts, normals, texcoords, program);
 		
 		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
 			scale: 1.0,
@@ -64,7 +61,7 @@ impl Mesh {
 			disp: Vector3::new(0.0, 0.0, -2.75),
 		};
 
-		Mesh { program, vs, fs, vao, vbo_verts, vbo_normals, vbo_texcoords, ibo, tex, num_verts: index_data.len() as u32, geom_type, transform }
+		Mesh { program, vs, fs, vao, ibo, tex, num_verts: index_data.len() as u32, geom_type, transform }
 	}
 	
 	pub fn draw(&mut self, proj: &Matrix4<GLfloat>) {
@@ -74,9 +71,9 @@ impl Mesh {
         // TODO: use glVertexAttribFormat, glVertexAttribBinding, and glBindVertexBuffers
 		unsafe {
 			gl::UseProgram(self.program);
-			gl::BindVertexArray(self.vao);
+			self.vao.bind();
 			gl::BindTexture(gl::TEXTURE_2D, self.tex);
-			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ibo);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ibo.id);
 
 			let uni_trans = gl::GetUniformLocation(self.program, CString::new("trans").unwrap().as_ptr());
 			gl::UniformMatrix4fv(uni_trans, 1, gl::FALSE, trans.as_ptr());
@@ -107,10 +104,6 @@ impl Drop for Mesh {
 			gl::DeleteProgram(self.program);
 			gl::DeleteShader(self.fs);
 			gl::DeleteShader(self.vs);
-			gl::DeleteBuffers(1, &self.vbo_verts);
-			gl::DeleteBuffers(1, &self.vbo_texcoords);
-			gl::DeleteBuffers(1, &self.ibo);
-			gl::DeleteVertexArrays(1, &self.vao);
 			gl::DeleteTextures(1, &self.tex);
 		}
 	}
@@ -175,82 +168,6 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
         }
         program
     }
-}
-
-fn create_vao(vbo_verts: GLuint, vbo_normal: GLuint, vbo_texcoords: GLuint, program: GLuint) -> GLuint {
-    let mut vao = 0;
-
-    unsafe {
-        gl::GenVertexArrays(1, &mut vao);
-        gl::BindVertexArray(vao);
-    };
-
-	bind_attribute("position", vbo_verts, 3, program);
-	bind_attribute("normal", vbo_normal, 3, program);
-	bind_attribute("texcoord", vbo_texcoords, 2, program);
-
-	set_frag_data_name("out_color", program);
-
-	vao
-}
-
-fn set_frag_data_name(name: &str, program: GLuint) {
-    unsafe {
-        gl::BindFragDataLocation(program, 0, CString::new(name).unwrap().as_ptr());
-    };
-}
-
-fn bind_attribute(name: &str, vbo: GLuint, num_components: u16, program: GLuint) {
-	unsafe {
-        let attr = gl::GetAttribLocation(program, CString::new(name).unwrap().as_ptr());
-        gl::EnableVertexAttribArray(attr as GLuint);
-		
-		gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-		gl::VertexAttribPointer(attr as GLuint,
-								num_components as i32,
-								gl::FLOAT,
-								gl::FALSE as GLboolean,
-								0,
-								ptr::null());
-	};
-}
-
-fn create_vbo2(data: &[Vector2<GLfloat>]) -> GLuint {
-	let mut vbo = 0;
-
-    if data.len() == 0 {
-        return 0;
-    }
-	
-	unsafe {
-        gl::GenBuffers(1, &mut vbo);
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(gl::ARRAY_BUFFER,
-                       (data.len() * mem::size_of::<Vector2<GLfloat>>()) as GLsizeiptr,
-                       mem::transmute(&data[0]),
-                       gl::STATIC_DRAW);
-	};
-	
-	vbo
-}
-
-fn create_vbo3(data: &[Vector3<GLfloat>]) -> GLuint {
-	let mut vbo = 0;
-	
-    if data.len() == 0 {
-        return 0;
-    }
-	
-	unsafe {
-        gl::GenBuffers(1, &mut vbo);
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(gl::ARRAY_BUFFER,
-                       (data.len() * mem::size_of::<Vector3<GLfloat>>()) as GLsizeiptr,
-                       mem::transmute(&data[0]),
-                       gl::STATIC_DRAW);
-	};
-	
-	vbo
 }
 
 fn create_ibo(data: &[i32]) -> GLuint {

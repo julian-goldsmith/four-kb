@@ -248,7 +248,7 @@ static FS_SRC: &'static str = "#version 150
 	
     void main() {
 		float cosTheta = clamp(dot(Normal_cameraspace, LightDirection_cameraspace), 0, 1);
-		vec4 mat_color = vec4(0.7, 0.2, 0.2, 1.0);
+		vec4 mat_color = vec4(1.0, 1.0, 1.0, 1.0);
 		vec4 light_color = vec4(0.6, 0.6, 0.6, 1.0);
 		vec4 ambient_color = vec4(0.1, 0.1, 0.1, 0.1);
 		

@@ -7,6 +7,7 @@ extern crate fbx_direct;
 mod mesh;
 mod image;
 mod fbx;
+mod gfx;
 
 use std::fs::File;
 use std::path::Path;
