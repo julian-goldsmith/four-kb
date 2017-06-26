@@ -211,6 +211,7 @@ static VS_SRC: &'static str = "#version 150
 	out vec3 EyeDirection_cameraspace;
 	out vec3 LightDirection_cameraspace;
 	out vec3 Normal_cameraspace;
+	out float dist;
 	
 	uniform mat4 trans;
 	uniform mat4 proj;
@@ -224,12 +225,14 @@ static VS_SRC: &'static str = "#version 150
 		Position_worldspace = (trans * vec4(position, 1)).xyz;
 		
 		vec3 vertexPosition_cameraspace = (view * trans * vec4(position, 1)).xyz;
-		EyeDirection_cameraspace = vec3(0, 0, 0) - vertexPosition_cameraspace;
+		EyeDirection_cameraspace = normalize(vec3(0, 0, 0) - vertexPosition_cameraspace);
 		
 		vec3 LightPosition_cameraspace = (view * vec4(LightPosition_worldspace, 1)).xyz;
 		LightDirection_cameraspace = normalize(LightPosition_cameraspace + EyeDirection_cameraspace);
 		
 		Normal_cameraspace = normalize((view * trans * vec4(normal, 0)).xyz);
+		
+		dist = distance(Position_worldspace, LightPosition_worldspace);
 		
 		Texcoord = texcoord;
 		gl_Position = mvp * vec4(position, 1.0);
@@ -241,6 +244,7 @@ static FS_SRC: &'static str = "#version 150
 	in vec3 EyeDirection_cameraspace;
 	in vec3 LightDirection_cameraspace;
 	in vec3 Normal_cameraspace;
+	in float dist;
 	
     out vec4 out_color;
 	
@@ -252,7 +256,14 @@ static FS_SRC: &'static str = "#version 150
 		vec4 light_color = vec4(0.6, 0.6, 0.6, 1.0);
 		vec4 ambient_color = vec4(0.1, 0.1, 0.1, 0.1);
 		
-		out_color = mat_color * ambient_color + mat_color * light_color * cosTheta;//texture(tex, Texcoord);
+		vec3 reverse_normal = reflect(-LightDirection_cameraspace, Normal_cameraspace);
+		float cosAlpha = clamp(dot(EyeDirection_cameraspace, reverse_normal), 0, 1);
+		
+		//texture(tex, Texcoord);
+		out_color = 
+			mat_color * ambient_color + 
+			mat_color * light_color * cosTheta +
+			mat_color * light_color * pow(cosAlpha, 8) / (dist * dist);
     }";
 
 impl From<FbxNode> for Mesh {
