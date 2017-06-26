@@ -31,6 +31,7 @@ pub struct FbxNode {
 }
 
 impl FbxNode {
+/*
     pub fn print(&self, depth: u32) {
         let spaces = (0..depth).fold(String::from(""), |acc, _| acc + "  ");
 
@@ -40,6 +41,7 @@ impl FbxNode {
             child.print(depth + 1);
         }
     }
+*/
 
     pub fn get_indices(&self) -> Option<(GeometryType, Vec<i32>)> {
         for child in &self.children {
