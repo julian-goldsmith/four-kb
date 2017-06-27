@@ -47,7 +47,6 @@ fn main() {
 
     while running {
         unsafe {
-            // Clear the screen to black
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }

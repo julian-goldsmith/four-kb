@@ -10,15 +10,16 @@ use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub enum NodeType {
-    Root,
-    Definitions,
-    Objects,
-    Geometry,
-    PolygonVertexIndex(GeometryType, Vec<i32>),
-    Vertices(Vec<Vector3<f32>>),
-    LayerElementNormal,
-    Normals(Vec<Vector3<f32>>),
-    Other(String),
+	Root,
+	Definitions,
+	Objects,
+	Geometry,
+	PolygonVertexIndex(GeometryType, Vec<i32>),
+	Vertices(Vec<Vector3<f32>>),
+	LayerElementUV,
+	UV(Vec<Vector2<f32>>),
+	UVIndex(Vec<i32>),
+	Other(String),
 }
 
 use self::NodeType::*;
@@ -31,7 +32,6 @@ pub struct FbxNode {
 }
 
 impl FbxNode {
-/*
     pub fn print(&self, depth: u32) {
         let spaces = (0..depth).fold(String::from(""), |acc, _| acc + "  ");
 
@@ -41,7 +41,6 @@ impl FbxNode {
             child.print(depth + 1);
         }
     }
-*/
 
     pub fn get_indices(&self) -> Option<(GeometryType, Vec<i32>)> {
         for child in &self.children {
@@ -70,25 +69,12 @@ impl FbxNode {
         None
     }
 	
-	pub fn get_normals(&self) -> Option<Vec<Vector3<f32>>> {
-        for child in &self.children {
-            match &child.node_type {
-                &Normals(ref verts) => return Some(verts.clone()),
-                _ => match child.get_vertices() {
-                    Some(verts) => return Some(verts),
-                    _ => (),
-                },
-            }
-        };
-        None
-	}
-	
 	pub fn get_texcoords(&self) -> Option<Vec<Vector2<f32>>> {
 		Some(Vec::<Vector2<f32>>::new())
 	}
 }
 
-fn parse_normals(mut properties: Vec<OwnedProperty>) -> FbxNode {
+fn parse_uv(mut properties: Vec<OwnedProperty>) -> FbxNode {
     assert_eq!(properties.len(), 1);
 
     let property = properties.pop().unwrap();
@@ -99,10 +85,27 @@ fn parse_normals(mut properties: Vec<OwnedProperty>) -> FbxNode {
         _ => panic!("Bad property in parse_normals"),
     };
 
-    assert_eq!(floats.len() % 3, 0);
+    assert_eq!(floats.len() % 2, 0);
 
     FbxNode {
-        node_type: Normals(floats.chunks(3).map(|chunk| Vector3::new(chunk[0], chunk[1], chunk[2])).collect()),
+        node_type: UV(floats.chunks(2).map(|chunk| Vector2::new(chunk[0], chunk[1])).collect()),
+        properties: Vec::new(),
+        children: Vec::new(),
+    }
+}
+
+fn parse_uvindex(mut properties: Vec<OwnedProperty>) -> FbxNode {
+    assert_eq!(properties.len(), 1);
+
+    let property = properties.pop().unwrap();
+
+    let ints = match property {
+        OwnedProperty::VecI32(ints) => ints,
+        _ => panic!("Bad property in parse_normals"),
+    };
+
+    FbxNode {
+        node_type: UVIndex(ints),
         properties: Vec::new(),
         children: Vec::new(),
     }
@@ -150,6 +153,14 @@ fn parse_indices(mut properties: Vec<OwnedProperty>) -> FbxNode {
 	}
 }
 
+fn parse_LayerElementUV(properties: Vec<OwnedProperty>) -> FbxNode {
+    FbxNode {
+        node_type: LayerElementUV,
+        properties,
+        children: Vec::new(),
+    }
+}
+
 fn parse_other(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
     FbxNode {
         node_type: Other(name),
@@ -161,12 +172,13 @@ fn parse_other(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
 fn convert_node(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
     match name.as_ref() {
         "Vertices" => parse_vertices(properties),
-        "Normals" => parse_normals(properties),
         "PolygonVertexIndex" => parse_indices(properties),
         "Objects" => FbxNode { node_type: Objects, properties: Vec::new(), children: Vec::new() },
         "Geometry" => FbxNode { node_type: Geometry, properties: Vec::new(), children: Vec::new() },
         "Definitions" => FbxNode { node_type: Definitions, properties: Vec::new(), children: Vec::new() },
-        "LayerElementNormal" => FbxNode { node_type: LayerElementNormal, properties: Vec::new(), children: Vec::new() },
+		"LayerElementUV" => parse_LayerElementUV(properties),
+		"UV" => parse_uv(properties),
+		"UVIndex" => parse_uvindex(properties),
         _ => parse_other(name, properties),
     }
 }
@@ -271,7 +283,7 @@ static FS_SRC: &'static str = "#version 150
 impl From<FbxNode> for Mesh {
     fn from(root: FbxNode) -> Mesh {
         let vertex_data = root.get_vertices().unwrap();
-		let normal_data = root.get_normals().unwrap();
+		let normal_data = root.get_vertices().unwrap();				// FIXME
         let (geom_type, index_data) = root.get_indices().unwrap();
         let texcoord_data = root.get_texcoords().unwrap();
         let image = image::load_image(&Path::new("monkey.png")).unwrap();

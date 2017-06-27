@@ -1,6 +1,5 @@
 use gl;
 use gl::types::*;
-use std::mem;
 use std::ptr;
 use std::str;
 use cgmath;
