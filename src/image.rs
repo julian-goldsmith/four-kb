@@ -3,6 +3,7 @@ use std::fs::File;
 use std::path::Path;
 use std::io;
 
+#[derive(Debug)]
 pub struct Image {
 	pub width: u32,
 	pub height: u32,

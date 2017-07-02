@@ -156,12 +156,12 @@ pub struct Texture {
 impl Texture {
 	pub fn new(image: &Image) -> Texture {
 		let mut tex = Texture { id: 0 };
+		let slice = &image.data[0..];
 		
 		unsafe {
 			gl::GenTextures(1, &mut tex.id);
-			gl::BindTexture(gl::TEXTURE_2D, tex.id);
+			tex.bind();
 			
-			let slice = &image.data[0..];
 			gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, image.width as i32, image.height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
 			
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);

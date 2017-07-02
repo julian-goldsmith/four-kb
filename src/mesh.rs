@@ -39,7 +39,7 @@ impl Mesh {
 		let program = Program::new(vertex_shader, fragment_shader);
 		
 		let tex = Texture::new(image);
-	
+		
 		let verts = VBO::new(vertex_data).unwrap();
 		let normals = VBO::new(normal_data).unwrap();
 		let texcoords = VBO::new(texcoord_data).unwrap();

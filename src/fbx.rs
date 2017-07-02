@@ -43,35 +43,64 @@ impl FbxNode {
     }
 
     pub fn get_indices(&self) -> Option<(GeometryType, Vec<i32>)> {
-        for child in &self.children {
-            match &child.node_type {
-                &PolygonVertexIndex(ref geom_type, ref indices) => 
-                    return Some((*geom_type, indices.clone())),
-                _ => match child.get_indices() {
-                    Some(indices) => return Some(indices),
-                    _ => ()
-                },
-            }
-        };
-        None
+		self.find_node(&|node| {
+			match &node.node_type {
+				&PolygonVertexIndex(ref geom_type, ref indices) => 
+					return Some((*geom_type, indices.clone())),
+				_ => None,
+			}
+		})
     }
 
     pub fn get_vertices(&self) -> Option<Vec<Vector3<f32>>> {
-        for child in &self.children {
-            match &child.node_type {
-                &Vertices(ref verts) => return Some(verts.clone()),
-                _ => match child.get_vertices() {
-                    Some(verts) => return Some(verts),
-                    _ => (),
-                },
-            }
-        };
-        None
+		self.find_node(&|node| {
+			match &node.node_type {
+				&Vertices(ref verts) => return Some(verts.clone()),
+				_ => None,
+			}
+		})
     }
 	
 	pub fn get_texcoords(&self) -> Option<Vec<Vector2<f32>>> {
-		Some(Vec::<Vector2<f32>>::new())
+		let uvindexes = self.find_node(&|node| {
+			match &node.node_type {
+				&UVIndex(ref idx) => Some(idx.clone()),
+				_ => None,
+			}
+		}).unwrap();
+		
+		let uv = self.find_node(&|node| {
+			match &node.node_type {
+				&UV(ref uv) => Some(uv.clone()),
+				_ => None,
+			}
+		}).unwrap();
+	
+		let mut texcoords = Vec::with_capacity(uvindexes.len());
+		
+		for idx in uvindexes {
+			texcoords.push(uv[idx as usize]);
+		}
+		
+		Some(texcoords)
 	}
+	
+    pub fn find_node<T, F>(&self, find_fn: &F) -> Option<T> where F: Fn(&FbxNode) -> Option<T> {
+		match find_fn(&self) {
+			Some(val) => return Some(val),
+			_ => (),
+		};
+	
+        for child in &self.children {
+			let cr = child.find_node(find_fn);
+			
+			if cr.is_some() {
+				return cr;
+			}
+        };
+		
+        None
+    }
 }
 
 fn parse_uv(mut properties: Vec<OwnedProperty>) -> FbxNode {
@@ -266,18 +295,18 @@ static FS_SRC: &'static str = "#version 150
 	
     void main() {
 		float cosTheta = clamp(dot(Normal_cameraspace, LightDirection_cameraspace), 0, 1);
-		vec4 mat_color = vec4(1.0, 1.0, 1.0, 1.0);
 		vec4 light_color = vec4(0.6, 0.6, 0.6, 1.0);
 		vec4 ambient_color = vec4(0.1, 0.1, 0.1, 0.1);
 		
 		vec3 reverse_normal = reflect(-LightDirection_cameraspace, Normal_cameraspace);
 		float cosAlpha = clamp(dot(EyeDirection_cameraspace, reverse_normal), 0, 1);
 		
-		//texture(tex, Texcoord);
-		out_color = 
-			mat_color * ambient_color + 
+		vec4 mat_color = texture(tex, Texcoord);
+		
+		out_color = vec4(Texcoord, 0.0, 0.0); //mat_color;
+			/*mat_color * ambient_color + 
 			mat_color * light_color * cosTheta +
-			mat_color * light_color * pow(cosAlpha, 8) / (dist * dist);
+			mat_color * light_color * pow(cosAlpha, 8) / (dist * dist);*/
     }";
 
 impl From<FbxNode> for Mesh {
