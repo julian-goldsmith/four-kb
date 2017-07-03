@@ -162,7 +162,7 @@ impl Texture {
 			gl::GenTextures(1, &mut tex.id);
 			tex.bind();
 			
-			gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, image.width as i32, image.height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
+			gl::TexImage2D(gl::TEXTURE_2D, 0, image.color_type as i32, image.width as i32, image.height as i32, 0, image.color_type, gl::UNSIGNED_BYTE, mem::transmute(&slice[0]));
 			
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);

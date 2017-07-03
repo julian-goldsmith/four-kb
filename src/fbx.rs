@@ -231,6 +231,7 @@ fn read_node(mut root: FbxNode, events: &mut Iterator<Item = Result<FbxEvent, Er
                 }
             },
             None | Some(Ok(FbxEvent::EndNode)) => return root,
+			Some(Err(err)) => panic!("Got error {:?}", err),
             _ => (),
         };
     }
@@ -301,12 +302,12 @@ static FS_SRC: &'static str = "#version 150
 		vec3 reverse_normal = reflect(-LightDirection_cameraspace, Normal_cameraspace);
 		float cosAlpha = clamp(dot(EyeDirection_cameraspace, reverse_normal), 0, 1);
 		
-		vec4 mat_color = texture(tex, Texcoord);
+		vec4 mat_color = vec4(1.0, 1.0, 1.0, 1.0);//texture(tex, Texcoord);
 		
-		out_color = vec4(Texcoord, 0.0, 0.0); //mat_color;
-			/*mat_color * ambient_color + 
+		out_color = 
+			mat_color * ambient_color + 
 			mat_color * light_color * cosTheta +
-			mat_color * light_color * pow(cosAlpha, 8) / (dist * dist);*/
+			mat_color * light_color * pow(cosAlpha, 8) / (dist * dist);
     }";
 
 impl From<FbxNode> for Mesh {

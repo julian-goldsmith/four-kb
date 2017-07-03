@@ -14,9 +14,12 @@ use std::path::Path;
 use mesh::Mesh;
 
 fn main() {
-    let fbx = File::open(&Path::new("monkey.fbx")).unwrap();
+    let fbx = File::open(&Path::new("cube.fbx")).unwrap();
 
     let mdl = fbx::read(fbx);
+	mdl.print(0);
+	
+	//return;
 
 	let events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new().
@@ -33,6 +36,9 @@ fn main() {
 	
 	unsafe {
 		gl::Enable(gl::DEPTH_TEST);
+		
+		gl::ActiveTexture(gl::TEXTURE0);
+		gl::ActiveTexture(gl::TEXTURE1);
 	}
 
 	let mut mesh: Mesh = mdl.into();
