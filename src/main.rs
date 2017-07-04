@@ -11,15 +11,15 @@ mod gfx;
 
 use std::fs::File;
 use std::path::Path;
+use std::io::BufReader;
 use mesh::Mesh;
 
 fn main() {
-    let fbx = File::open(&Path::new("cube.fbx")).unwrap();
-
-    let mdl = fbx::read(fbx);
-	mdl.print(0);
-	
-	//return;
+	let mdl = {
+		let fbx = File::open(&Path::new("monkey.fbx")).unwrap();
+		let buf = BufReader::new(fbx);
+		fbx::read(buf)
+	};
 
 	let events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new().

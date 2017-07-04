@@ -3,6 +3,9 @@ use gl::types::*;
 use std::ptr;
 use std::str;
 use std::ffi::CString;
+use std::fs::File;
+use std::path::Path;
+use std::io::Read;
 use cgmath::{Matrix,Matrix4};
 
 pub struct Program {
@@ -80,6 +83,26 @@ impl Program {
 			
 			Program { vs, fs, id: program }
 		}
+	}
+	
+	pub fn from_path(vs_path: &Path, fs_path: &Path) -> Program {
+		let vs_text = {
+			let mut f = File::open(vs_path).unwrap();
+			let mut vs_text = String::new();
+			f.read_to_string(&mut vs_text).unwrap();
+			
+			vs_text
+		};
+		
+		let fs_text = {
+			let mut f = File::open(fs_path).unwrap();
+			let mut fs_text = String::new();
+			f.read_to_string(&mut fs_text).unwrap();
+			
+			fs_text
+		};
+		
+		Program::new(&vs_text, &fs_text)
 	}
 	
 	pub fn bind(&self) {

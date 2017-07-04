@@ -28,7 +28,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-	pub fn new(vertex_shader: &str, fragment_shader: &str, 
+	pub fn new(program: Program, 
 			   vertex_data: &[Vector3<GLfloat>],
 			   normal_data: &[Vector3<GLfloat>],
                index_data: &[i32],
@@ -36,8 +36,6 @@ impl Mesh {
 			   image: &Image,
 			   geom_type: GeometryType) -> Mesh {
 
-		let program = Program::new(vertex_shader, fragment_shader);
-		
 		let tex = Texture::new(image);
 		
 		let verts = VBO::new(vertex_data).unwrap();

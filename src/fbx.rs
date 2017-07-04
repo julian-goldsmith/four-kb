@@ -7,6 +7,7 @@ use mesh::{GeometryType, Mesh};
 use cgmath::{Vector3, Vector2};
 use image;
 use std::path::Path;
+use gfx::program::Program;
 
 #[derive(Debug, PartialEq)]
 pub enum NodeType {
@@ -32,16 +33,6 @@ pub struct FbxNode {
 }
 
 impl FbxNode {
-    pub fn print(&self, depth: u32) {
-        let spaces = (0..depth).fold(String::from(""), |acc, _| acc + "  ");
-
-        println!("{} {:?} {:?}", &spaces, &self.node_type, &self.properties);
-
-        for child in &self.children {
-            child.print(depth + 1);
-        }
-    }
-
     pub fn get_indices(&self) -> Option<(GeometryType, Vec<i32>)> {
 		self.find_node(&|node| {
 			match &node.node_type {
@@ -182,22 +173,6 @@ fn parse_indices(mut properties: Vec<OwnedProperty>) -> FbxNode {
 	}
 }
 
-fn parse_LayerElementUV(properties: Vec<OwnedProperty>) -> FbxNode {
-    FbxNode {
-        node_type: LayerElementUV,
-        properties,
-        children: Vec::new(),
-    }
-}
-
-fn parse_other(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
-    FbxNode {
-        node_type: Other(name),
-        properties,
-        children: Vec::new(),
-    }
-}
-
 fn convert_node(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
     match name.as_ref() {
         "Vertices" => parse_vertices(properties),
@@ -205,10 +180,10 @@ fn convert_node(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
         "Objects" => FbxNode { node_type: Objects, properties: Vec::new(), children: Vec::new() },
         "Geometry" => FbxNode { node_type: Geometry, properties: Vec::new(), children: Vec::new() },
         "Definitions" => FbxNode { node_type: Definitions, properties: Vec::new(), children: Vec::new() },
-		"LayerElementUV" => parse_LayerElementUV(properties),
+		"LayerElementUV" => FbxNode { node_type: LayerElementUV, properties, children: Vec::new() },
 		"UV" => parse_uv(properties),
 		"UVIndex" => parse_uvindex(properties),
-        _ => parse_other(name, properties),
+        _ => FbxNode { node_type: Other(name), properties, children: Vec::new() },
     }
 }
 
@@ -242,73 +217,8 @@ pub fn read<T: Read>(reader: T) -> FbxNode {
 
     let mut events = fbr.into_iter();
 
-    return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, true);
+    return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, false);
 }
-
-static VS_SRC: &'static str = "#version 150
-    in vec3 position;
-    in vec3 normal;
-	in vec2 texcoord;
-	
-	out vec2 Texcoord;
-	out vec3 Position_worldspace;
-	out vec3 EyeDirection_cameraspace;
-	out vec3 LightDirection_cameraspace;
-	out vec3 Normal_cameraspace;
-	out float dist;
-	
-	uniform mat4 trans;
-	uniform mat4 proj;
-	uniform mat4 view;
-	
-    void main() {
-		mat4 mvp = proj * trans * view;
-		
-		vec3 LightPosition_worldspace = vec3(0, 0, 0);
-		
-		Position_worldspace = (trans * vec4(position, 1)).xyz;
-		
-		vec3 vertexPosition_cameraspace = (view * trans * vec4(position, 1)).xyz;
-		EyeDirection_cameraspace = normalize(vec3(0, 0, 0) - vertexPosition_cameraspace);
-		
-		vec3 LightPosition_cameraspace = (view * vec4(LightPosition_worldspace, 1)).xyz;
-		LightDirection_cameraspace = normalize(LightPosition_cameraspace + EyeDirection_cameraspace);
-		
-		Normal_cameraspace = normalize((view * trans * vec4(normal, 0)).xyz);
-		
-		dist = distance(Position_worldspace, LightPosition_worldspace);
-		
-		Texcoord = texcoord;
-		gl_Position = mvp * vec4(position, 1.0);
-    }";
-
-static FS_SRC: &'static str = "#version 150
-	in vec2 Texcoord;
-	in vec3 Position_worldspace;
-	in vec3 EyeDirection_cameraspace;
-	in vec3 LightDirection_cameraspace;
-	in vec3 Normal_cameraspace;
-	in float dist;
-	
-    out vec4 out_color;
-	
-	uniform sampler2D tex;
-	
-    void main() {
-		float cosTheta = clamp(dot(Normal_cameraspace, LightDirection_cameraspace), 0, 1);
-		vec4 light_color = vec4(0.6, 0.6, 0.6, 1.0);
-		vec4 ambient_color = vec4(0.1, 0.1, 0.1, 0.1);
-		
-		vec3 reverse_normal = reflect(-LightDirection_cameraspace, Normal_cameraspace);
-		float cosAlpha = clamp(dot(EyeDirection_cameraspace, reverse_normal), 0, 1);
-		
-		vec4 mat_color = vec4(1.0, 1.0, 1.0, 1.0);//texture(tex, Texcoord);
-		
-		out_color = 
-			mat_color * ambient_color + 
-			mat_color * light_color * cosTheta +
-			mat_color * light_color * pow(cosAlpha, 8) / (dist * dist);
-    }";
 
 impl From<FbxNode> for Mesh {
     fn from(root: FbxNode) -> Mesh {
@@ -317,7 +227,8 @@ impl From<FbxNode> for Mesh {
         let (geom_type, index_data) = root.get_indices().unwrap();
         let texcoord_data = root.get_texcoords().unwrap();
         let image = image::load_image(&Path::new("monkey.png")).unwrap();
+		let program = Program::from_path(&Path::new("shader.vert"), &Path::new("shader.frag"));
 		
-        Mesh::new(VS_SRC, FS_SRC, &vertex_data, &normal_data, &index_data, &texcoord_data, &image, geom_type)
+        Mesh::new(program, &vertex_data, &normal_data, &index_data, &texcoord_data, &image, geom_type)
     }
 }
