@@ -1,6 +1,7 @@
 use std::string::String;
 use std::io::Read;
 use std::convert::From;
+use std::iter::Iterator;
 use fbx_direct::reader::{EventReader, FbxEvent, Error};
 use fbx_direct::common::OwnedProperty;
 use mesh::{GeometryType, Mesh};
@@ -44,12 +45,17 @@ impl FbxNode {
     }
 
     pub fn get_vertices(&self) -> Option<Vec<Vector3<f32>>> {
-		self.find_node(&|node| {
+		let verts = self.find_node(&|node| {
 			match &node.node_type {
 				&Vertices(ref verts) => return Some(verts.clone()),
 				_ => None,
 			}
-		})
+		}).unwrap();
+		
+		let indices = self.get_indices().unwrap();
+		let (_, indices) = indices;
+		
+		Some(indices.iter().map(|i| verts[*i as usize]).collect())
     }
 	
 	pub fn get_texcoords(&self) -> Option<Vec<Vector2<f32>>> {

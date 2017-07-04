@@ -49,45 +49,6 @@ impl Drop for VBO {
 	}
 }
 
-pub struct IBO {
-	id: GLuint,
-}
-
-impl IBO {
-	pub fn new(data: &[i32]) -> Option<IBO> {
-		let mut ibo = 0;
-
-		if data.len() == 0 {
-			return None;
-		}
-		
-		unsafe {
-			gl::GenBuffers(1, &mut ibo);
-			gl::BindBuffer(gl::ARRAY_BUFFER, ibo);
-			gl::BufferData(gl::ARRAY_BUFFER,
-						   (data.len() * mem::size_of::<i32>()) as GLsizeiptr,
-						   mem::transmute(&data[0]),
-						   gl::STATIC_DRAW);
-		};
-		
-		Some(IBO { id: ibo })
-	}
-	
-	pub fn bind(&self) {
-		unsafe {
-			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.id);
-		}
-	}
-}
-
-impl Drop for IBO {
-	fn drop(&mut self) {
-		unsafe {
-			gl::DeleteBuffers(1, &self.id);
-		}
-	}
-}
-
 pub struct VAO {
 	id: GLuint,
 	verts: VBO,

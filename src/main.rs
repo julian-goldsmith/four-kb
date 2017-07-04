@@ -16,7 +16,7 @@ use mesh::Mesh;
 
 fn main() {
 	let mdl = {
-		let fbx = File::open(&Path::new("monkey.fbx")).unwrap();
+		let fbx = File::open(&Path::new("cube.fbx")).unwrap();
 		let buf = BufReader::new(fbx);
 		fbx::read(buf)
 	};

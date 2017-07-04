@@ -19,7 +19,7 @@ void main() {
 	vec3 reverse_normal = reflect(-LightDirection_cameraspace, Normal_cameraspace);
 	float cosAlpha = clamp(dot(EyeDirection_cameraspace, reverse_normal), 0, 1);
 	
-	vec4 mat_color = vec4(1.0, 1.0, 1.0, 1.0);//texture(tex, Texcoord);
+	vec4 mat_color = texture(tex, Texcoord);
 	
 	out_color = 
 		mat_color * ambient_color + 
