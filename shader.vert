@@ -1,14 +1,12 @@
 #version 150
 
 in vec3 position;
-in vec3 normal;
 in vec2 texcoord;
 
 out vec2 Texcoord;
 out vec3 Position_worldspace;
 out vec3 EyeDirection_cameraspace;
 out vec3 LightDirection_cameraspace;
-out vec3 Normal_cameraspace;
 out float dist;
 
 uniform mat4 trans;
@@ -27,8 +25,6 @@ void main() {
 	
 	vec3 LightPosition_cameraspace = (view * vec4(LightPosition_worldspace, 1)).xyz;
 	LightDirection_cameraspace = normalize(LightPosition_cameraspace + EyeDirection_cameraspace);
-	
-	Normal_cameraspace = normalize((view * trans * vec4(normal, 0)).xyz);
 	
 	dist = distance(Position_worldspace, LightPosition_worldspace);
 	

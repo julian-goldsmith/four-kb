@@ -114,7 +114,7 @@ fn parse_uv(mut properties: Vec<OwnedProperty>) -> FbxNode {
     assert_eq!(floats.len() % 2, 0);
 
     FbxNode {
-        node_type: UV(floats.chunks(2).map(|chunk| Vector2::new(chunk[0], chunk[1])).collect()),
+        node_type: UV(floats.chunks(2).map(|chunk| Vector2::new(chunk[0], 1.0-chunk[1])).collect()),
         properties: Vec::new(),
         children: Vec::new(),
     }
@@ -229,12 +229,12 @@ pub fn read<T: Read>(reader: T) -> FbxNode {
 impl From<FbxNode> for Mesh {
     fn from(root: FbxNode) -> Mesh {
         let vertex_data = root.get_vertices().unwrap();
-		let normal_data = root.get_vertices().unwrap();				// FIXME
         let (geom_type, index_data) = root.get_indices().unwrap();
         let texcoord_data = root.get_texcoords().unwrap();
         let image = image::load_image(&Path::new("monkey.png")).unwrap();
+        let normals = image::load_image(&Path::new("normals.png")).unwrap();
 		let program = Program::from_path(&Path::new("shader.vert"), &Path::new("shader.frag"));
 		
-        Mesh::new(program, &vertex_data, &normal_data, &index_data, &texcoord_data, &image, geom_type)
+        Mesh::new(program, &vertex_data, &normals, &index_data, &texcoord_data, &image, geom_type)
     }
 }

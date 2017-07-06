@@ -52,13 +52,12 @@ impl Drop for VBO {
 pub struct VAO {
 	id: GLuint,
 	verts: VBO,
-	normal: VBO,
 	texcoords: VBO,
 }
 
 impl VAO {
-	pub fn new(verts: VBO, normal: VBO, texcoords: VBO, program: &Program) -> VAO {
-		let mut vao = VAO { id: 0, verts, normal, texcoords };
+	pub fn new(verts: VBO, texcoords: VBO, program: &Program) -> VAO {
+		let mut vao = VAO { id: 0, verts, texcoords };
 
 		unsafe {
 			gl::GenVertexArrays(1, &mut vao.id);
@@ -66,7 +65,6 @@ impl VAO {
 		};
 
 		VAO::bind_attribute("position", &vao.verts, 3, program);
-		VAO::bind_attribute("normal", &vao.normal, 3, program);
 		VAO::bind_attribute("texcoord", &vao.texcoords, 2, program);
 
 		VAO::set_frag_data_name("out_color", program);
@@ -112,11 +110,19 @@ impl Drop for VAO {
 
 pub struct Texture {
 	pub id: GLuint,
+	pub tex_unit: GLuint,
 }
+
+static mut tex_units_used: GLuint = 0;
 
 impl Texture {
 	pub fn new(image: &Image) -> Texture {
-		let mut tex = Texture { id: 0 };
+		let tex_unit = unsafe {
+			let tex_unit = tex_units_used;
+			tex_units_used += 1;
+			tex_unit
+		};
+		let mut tex = Texture { id: 0, tex_unit };
 		let slice = &image.data[0..];
 		
 		unsafe {
@@ -127,6 +133,9 @@ impl Texture {
 			
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
 			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+			
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
+			gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
 		};
 		
 		tex
@@ -134,6 +143,7 @@ impl Texture {
 	
 	pub fn bind(&self) {
 		unsafe {
+			gl::ActiveTexture(gl::TEXTURE0 + self.tex_unit);
 			gl::BindTexture(gl::TEXTURE_2D, self.id);
 		};
 	}
