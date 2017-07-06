@@ -16,13 +16,13 @@ uniform mat4 view;
 
 void main() {
 	vec3 normal = texture(normal_tex, Texcoord).rgb;
-	vec3 Normal_cameraspace = normalize((view * trans * vec4(normal, 0)).xyz);
+	//vec3 Normal_cameraspace = normalize(normal);
 	
-	float cosTheta = clamp(dot(Normal_cameraspace, LightDirection_cameraspace), 0, 1);
+	float cosTheta = clamp(dot(normal, LightDirection_cameraspace), 0, 1);
 	vec4 light_color = vec4(0.8, 0.8, 0.8, 1.0);
 	vec4 ambient_color = vec4(0.1, 0.1, 0.1, 0.1);
 	
-	vec3 reverse_normal = reflect(-LightDirection_cameraspace, Normal_cameraspace);
+	vec3 reverse_normal = reflect(-LightDirection_cameraspace, normal);
 	float cosAlpha = clamp(dot(EyeDirection_cameraspace, reverse_normal), 0, 1);
 	
 	vec4 mat_color = texture(tex, Texcoord);
