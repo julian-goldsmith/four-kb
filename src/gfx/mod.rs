@@ -113,13 +113,13 @@ pub struct Texture {
 	pub tex_unit: GLuint,
 }
 
-static mut tex_units_used: GLuint = 0;
+static mut TEX_UNITS_USED: GLuint = 0;
 
 impl Texture {
 	pub fn new(image: &Image) -> Texture {
 		let tex_unit = unsafe {
-			let tex_unit = tex_units_used;
-			tex_units_used += 1;
+			let tex_unit = TEX_UNITS_USED;
+			TEX_UNITS_USED += 1;
 			tex_unit
 		};
 		let mut tex = Texture { id: 0, tex_unit };

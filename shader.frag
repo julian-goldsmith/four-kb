@@ -16,7 +16,6 @@ uniform mat4 view;
 
 void main() {
 	vec3 normal = texture(normal_tex, Texcoord).rgb;
-	//vec3 Normal_cameraspace = normalize(normal);
 	
 	float cosTheta = clamp(dot(normal, LightDirection_cameraspace), 0, 1);
 	vec4 light_color = vec4(0.8, 0.8, 0.8, 1.0);

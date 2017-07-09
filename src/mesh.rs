@@ -2,7 +2,7 @@ use gl;
 use gl::types::*;
 use cgmath;
 use cgmath::prelude::*;
-use cgmath::{Matrix4, Vector3, Deg, Basis3, Vector2};
+use cgmath::{Matrix4, Vector3, Basis3, Vector2};
 use image::Image;
 use gfx::*;
 use gfx::program::Program;
@@ -21,8 +21,6 @@ pub struct Mesh {
 
 	pub geom_type: GeometryType,
 	pub num_verts: u32,
-	
-	pub transform: cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>,
 }
 
 impl Mesh {
@@ -40,18 +38,12 @@ impl Mesh {
 		let verts = VBO::new(vertex_data).unwrap();
 		let texcoords = VBO::new(texcoord_data).unwrap();
 		let vao = VAO::new(verts, texcoords, &program);
-		
-		let transform = cgmath::Decomposed::<Vector3<GLfloat>, Basis3<GLfloat>> {
-			scale: 1.0,
-			rot: Basis3::from_angle_x(Deg(-90.0)),
-			disp: Vector3::new(0.0, 0.0, -2.75),
-		};
 
-		Mesh { program, vao, tex, normal_tex, num_verts: index_data.len() as u32, geom_type, transform }
+		Mesh { program, vao, tex, normal_tex, num_verts: index_data.len() as u32, geom_type, }
 	}
 	
-	pub fn draw(&mut self, proj: &Matrix4<GLfloat>) {
-		let trans = Matrix4::from(self.transform);
+	pub fn draw(&self, proj: &Matrix4<GLfloat>, transform: &cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>) {
+		let trans = transform.clone().into();
 		let view = <cgmath::Matrix4<f32> as One>::one();
 		
         // TODO: use glVertexAttribFormat, glVertexAttribBinding, and glBindVertexBuffers
@@ -62,7 +54,7 @@ impl Mesh {
 
 		self.program.bind();
 		self.program.bind_uniform_matrix4("trans", &trans);
-		self.program.bind_uniform_matrix4("proj", &proj);
+		self.program.bind_uniform_matrix4("proj", proj);
 		self.program.bind_uniform_matrix4("view", &view);
 		self.program.bind_uniform_int32("tex", self.tex.tex_unit as i32);
 		self.program.bind_uniform_int32("normal_tex", self.normal_tex.tex_unit as i32);
@@ -75,7 +67,5 @@ impl Mesh {
 		unsafe {
 			gl::DrawArrays(geom_type, 0, self.num_verts as i32);
 		};
-		
-		self.transform.rot = self.transform.rot * Basis3::from_angle_z(Deg(-0.375));
 	}
 }

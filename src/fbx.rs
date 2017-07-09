@@ -5,10 +5,11 @@ use std::iter::Iterator;
 use fbx_direct::reader::{EventReader, FbxEvent, Error};
 use fbx_direct::common::OwnedProperty;
 use mesh::{GeometryType, Mesh};
-use cgmath::{Vector3, Vector2};
+use cgmath::{Vector3, Vector2,Decomposed,Basis3,Deg,Rotation3};
 use image;
 use std::path::Path;
 use gfx::program::Program;
+use object::Object;
 
 #[derive(Debug, PartialEq)]
 pub enum NodeType {
@@ -226,8 +227,8 @@ pub fn read<T: Read>(reader: T) -> FbxNode {
     return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, false);
 }
 
-impl From<FbxNode> for Mesh {
-    fn from(root: FbxNode) -> Mesh {
+impl From<FbxNode> for Object {
+    fn from(root: FbxNode) -> Object {
         let vertex_data = root.get_vertices().unwrap();
         let (geom_type, index_data) = root.get_indices().unwrap();
         let texcoord_data = root.get_texcoords().unwrap();
@@ -235,6 +236,14 @@ impl From<FbxNode> for Mesh {
         let normals = image::load_image(&Path::new("normals.png")).unwrap();
 		let program = Program::from_path(&Path::new("shader.vert"), &Path::new("shader.frag"));
 		
-        Mesh::new(program, &vertex_data, &normals, &index_data, &texcoord_data, &image, geom_type)
+		Object {
+			mesh: Mesh::new(program, &vertex_data, &normals, &index_data, &texcoord_data, &image, geom_type),
+			
+			transform: Decomposed::<Vector3<f32>, Basis3<f32>> {
+				scale: 1.0,
+				rot: Basis3::from_angle_x(Deg(-90.0)),
+				disp: Vector3::new(0.0, 0.0, -2.75),
+			},
+		}
     }
 }

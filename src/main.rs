@@ -8,11 +8,12 @@ mod mesh;
 mod image;
 mod fbx;
 mod gfx;
+mod object;
 
 use std::fs::File;
 use std::path::Path;
 use std::io::BufReader;
-use mesh::Mesh;
+use object::Object;
 
 fn main() {
 	let mdl = {
@@ -36,13 +37,14 @@ fn main() {
 	
 	unsafe {
 		gl::Enable(gl::DEPTH_TEST);
+		gl::Enable(gl::CULL_FACE);
 		
 		gl::ActiveTexture(gl::TEXTURE0);
 		gl::ActiveTexture(gl::TEXTURE1);
 		gl::ActiveTexture(gl::TEXTURE2);
 	}
 
-	let mut mesh: Mesh = mdl.into();
+	let mut object: Object = mdl.into();
 	
 	let proj = cgmath::perspective(
 		cgmath::Deg(90.0),
@@ -58,7 +60,7 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-		mesh.draw(&proj);
+		object.draw(&proj);
 
         window.swap_buffers().unwrap();
 
