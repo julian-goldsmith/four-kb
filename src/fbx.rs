@@ -35,6 +35,16 @@ pub struct FbxNode {
 }
 
 impl FbxNode {
+    pub fn print(&self, depth: u32) {
+        let spaces = (0..depth).fold(String::from(""), |acc, _| acc + "  ");
+
+        println!("{} {:?} {:?}", &spaces, &self.node_type, &self.properties);
+
+        for child in &self.children {
+            child.print(depth + 1);
+        }
+    }
+	
     pub fn get_indices(&self) -> Option<(GeometryType, Vec<i32>)> {
 		self.find_node(&|node| {
 			match &node.node_type {
@@ -184,9 +194,9 @@ fn convert_node(name: String, properties: Vec<OwnedProperty>) -> FbxNode {
     match name.as_ref() {
         "Vertices" => parse_vertices(properties),
         "PolygonVertexIndex" => parse_indices(properties),
-        "Objects" => FbxNode { node_type: Objects, properties: Vec::new(), children: Vec::new() },
-        "Geometry" => FbxNode { node_type: Geometry, properties: Vec::new(), children: Vec::new() },
-        "Definitions" => FbxNode { node_type: Definitions, properties: Vec::new(), children: Vec::new() },
+        "Objects" => FbxNode { node_type: Objects, properties: properties, children: Vec::new() },
+        "Geometry" => FbxNode { node_type: Geometry, properties: properties, children: Vec::new() },
+        "Definitions" => FbxNode { node_type: Definitions, properties: properties, children: Vec::new() },
 		"LayerElementUV" => FbxNode { node_type: LayerElementUV, properties, children: Vec::new() },
 		"UV" => parse_uv(properties),
 		"UVIndex" => parse_uvindex(properties),
@@ -224,7 +234,7 @@ pub fn read<T: Read>(reader: T) -> FbxNode {
 
     let mut events = fbr.into_iter();
 
-    return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, false);
+    return read_node(FbxNode { node_type: Root, properties: vec![], children: vec![] }, &mut events, true);
 }
 
 impl From<FbxNode> for Object {
@@ -237,6 +247,8 @@ impl From<FbxNode> for Object {
 		let program = Program::from_path(&Path::new("shader.vert"), &Path::new("shader.frag"));
 		
 		Object {
+			name: String::from("Unimplemented"),
+			
 			mesh: Mesh::new(program, &vertex_data, &normals, &index_data, &texcoord_data, &image, geom_type),
 			
 			transform: Decomposed::<Vector3<f32>, Basis3<f32>> {

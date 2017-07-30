@@ -46,12 +46,13 @@ fn main() {
 
 	let mut object: Object = mdl.into();
 	
-	let proj = cgmath::perspective(
-		cgmath::Deg(90.0),
-		4.0/3.0,
-		1.0,
-		20.0);
-		
+	let mut proj = cgmath::PerspectiveFov {
+		fovy: cgmath::Deg(90.0).into(),
+		aspect: 4.0/3.0,
+		near: 1.0,
+		far: 20.0,
+    };
+
 	let mut running = true;
 
     while running {
@@ -60,7 +61,7 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-		object.draw(&proj);
+		object.draw(proj);
 
         window.swap_buffers().unwrap();
 
@@ -69,6 +70,14 @@ fn main() {
 				glutin::Event::WindowEvent { event: glutin::WindowEvent::Closed, .. } => {
 					running = false;
 				},
+                glutin::Event::WindowEvent { event: glutin::WindowEvent::Resized(width, height), .. } => {
+                    proj = cgmath::PerspectiveFov {
+                        fovy: cgmath::Deg(90.0).into(),
+                        aspect: width as f32 / height as f32,
+                        near: 1.0,
+                        far: 20.0,
+                    };
+                },
 				_ => (),
 			}
 		});

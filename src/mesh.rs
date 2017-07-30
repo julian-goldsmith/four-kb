@@ -67,5 +67,7 @@ impl Mesh {
 		unsafe {
 			gl::DrawArrays(geom_type, 0, self.num_verts as i32);
 		};
+
+        println!("Drew {} verts", self.num_verts);
 	}
 }
