@@ -182,6 +182,8 @@ fn parse_indices(mut properties: Vec<OwnedProperty>) -> FbxNode {
 		true => GeometryType::Tris,
 		false => GeometryType::Quads,
 	};
+
+    assert_eq!(geom_type, GeometryType::Tris);
 	
 	FbxNode {
 		node_type: PolygonVertexIndex(geom_type, indices.iter().cloned().map(|i| if i < 0 { i.abs() - 1 } else { i }).collect()),
