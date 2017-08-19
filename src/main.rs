@@ -4,6 +4,7 @@ extern crate gl;
 extern crate glutin;
 extern crate png;
 extern crate fbx_direct;
+extern crate time;
 mod mesh;
 mod image;
 mod fbx;
@@ -14,6 +15,7 @@ use std::fs::File;
 use std::path::Path;
 use std::io::BufReader;
 use object::Object;
+use time::Duration;
 
 fn main() {
 	let mdl = {
@@ -55,7 +57,12 @@ fn main() {
 
 	let mut running = true;
 
+    let mut frames = 0;
+    let mut duration = Duration::zero();
+
     while running {
+        let time1 = time::get_time();
+
         unsafe {
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -81,5 +88,18 @@ fn main() {
 				_ => (),
 			}
 		});
+
+        let time2 = time::get_time();
+        let frame_duration = time2 - time1;
+
+        frames = frames + 1;
+        duration = duration + frame_duration;
+
+        if duration > Duration::seconds(1) {
+            println!("{} FPS", frames);
+
+            frames = 0;
+            duration = Duration::zero();
+        }
     }
 }
