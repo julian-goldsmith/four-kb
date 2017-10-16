@@ -10,6 +10,8 @@ mod image;
 mod fbx;
 mod gfx;
 mod object;
+mod model;
+mod model_loader;
 
 use std::fs::File;
 use std::path::Path;
@@ -19,7 +21,7 @@ use time::Duration;
 
 fn main() {
 	let mdl = {
-		let fbx = File::open(&Path::new("monkey.fbx")).unwrap();
+		let fbx = File::open(&Path::new("assets/monkey.fbx")).unwrap();
 		let buf = BufReader::new(fbx);
 		fbx::read(buf)
 	};

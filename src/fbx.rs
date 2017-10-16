@@ -244,9 +244,9 @@ impl From<FbxNode> for Object {
         let vertex_data = root.get_vertices().unwrap();
         let (geom_type, index_data) = root.get_indices().unwrap();
         let texcoord_data = root.get_texcoords().unwrap();
-        let image = image::load_image(&Path::new("monkey.png")).unwrap();
-        let normals = image::load_image(&Path::new("normals.png")).unwrap();
-		let program = Program::from_path(&Path::new("shader.vert"), &Path::new("shader.frag"));
+        let image = image::load_image(&Path::new("assets/monkey.png")).unwrap();
+        let normals = image::load_image(&Path::new("assets/normals.png")).unwrap();
+		let program = Program::from_path(&Path::new("assets/shader.vert"), &Path::new("assets/shader.frag"));
 		
 		Object {
 			name: String::from("Unimplemented"),
