@@ -7,7 +7,6 @@ extern crate fbx_direct;
 extern crate time;
 mod mesh;
 mod image;
-mod fbx;
 mod gfx;
 mod object;
 mod model;
@@ -18,14 +17,10 @@ use std::path::Path;
 use std::io::BufReader;
 use object::Object;
 use time::Duration;
+use mesh::Mesh;
+use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3};
 
 fn main() {
-	let mdl = {
-		let fbx = File::open(&Path::new("assets/monkey.fbx")).unwrap();
-		let buf = BufReader::new(fbx);
-		fbx::read(buf)
-	};
-
 	let events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new().
 		with_vsync().
@@ -39,6 +34,12 @@ fn main() {
     // TODO: `as *const _` will not be needed once glutin is updated to the latest gl version
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 	
+	let mdl: Mesh = {
+        let mut file = File::open(&Path::new("assets/monkey.mdl")).unwrap();
+        let mdl = model_loader::load_model(&mut file);
+        mdl.into()
+	};
+
 	unsafe {
 		gl::Enable(gl::DEPTH_TEST);
 		gl::Enable(gl::CULL_FACE);
@@ -48,7 +49,7 @@ fn main() {
 		gl::ActiveTexture(gl::TEXTURE2);
 	}
 
-	let mut object: Object = mdl.into();
+	//let mut object: Object = mdl.into();
 	
 	let mut proj = cgmath::PerspectiveFov {
 		fovy: cgmath::Deg(90.0).into(),
@@ -62,6 +63,8 @@ fn main() {
     let mut frames = 0;
     let mut duration = Duration::zero();
 
+    let mut deg = 0.0;
+
     while running {
         let time1 = time::get_time();
 
@@ -70,7 +73,16 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-		object.draw(proj);
+        let trans = Decomposed::<Vector3<f32>, Basis3<f32>> {
+                    scale: 1.0,
+                    rot: Basis3::from_angle_y(Deg(deg)),
+                    disp: Vector3::new(0.0, 0.0, -2.75),
+                }.into();//read_transform(reader);
+		//object.draw(proj);
+        let mproj = proj.into();
+        mdl.draw(&mproj, &trans);
+
+        deg += 2.0;
 
         window.swap_buffers().unwrap();
 

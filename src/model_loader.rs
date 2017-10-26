@@ -2,7 +2,7 @@ use std::io::Read;
 use std::mem;
 use model;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
-use cgmath::{Matrix3, Vector2, Vector3};
+use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3};
 
 fn read_bool(reader: &mut Read) -> bool {
     let mut buf = [0];
@@ -25,14 +25,14 @@ fn read_string(reader: &mut Read) -> String {
     String::from_utf8(string_buf).unwrap()
 }
 
-fn read_transform(reader: &mut Read) -> Matrix3<f32> {
+fn read_transform(reader: &mut Read) -> Matrix4<f32> {
     let mut buf = [0; 3 * 3 * 4];
     reader.read(&mut buf);
 
-    let mut matrix: Matrix3<f32> = unsafe { mem::uninitialized() };
+    let mut matrix: Matrix4<f32> = unsafe { mem::uninitialized() };
     unsafe {
         BigEndian::read_f32_into_unchecked(&buf, 
-                                           &mut matrix.as_mut() as &mut [f32; 9]);
+                                           &mut matrix.as_mut() as &mut [f32; 16]);
     }
 
     matrix
@@ -86,17 +86,17 @@ fn read_material(reader: &mut Read) -> model::Material {
 }
 
 fn read_vertex(reader: &mut Read) -> Vector3<f32> {
-    let mut vertex: Vector3<f32> = unsafe { mem::uninitialized() };
+    let mut vertex: Vector3<f32> = unsafe { mem::zeroed() };
 
     unsafe {
-        reader.read_f32_into_unchecked::<BigEndian>(&mut vertex[0..9]).unwrap();
+        reader.read_f32_into_unchecked::<BigEndian>(&mut vertex[0..3]).unwrap();
     };
 
     vertex
 }
 
 fn read_texcoord(reader: &mut Read) -> Vector2<f32> {
-    let mut texcoord: Vector2<f32> = unsafe { mem::uninitialized() };
+    let mut texcoord: Vector2<f32> = unsafe { mem::zeroed() };
 
     unsafe {
         reader.read_f32_into_unchecked::<BigEndian>(&mut texcoord[0..2]).
@@ -106,19 +106,10 @@ fn read_texcoord(reader: &mut Read) -> Vector2<f32> {
     texcoord
 }
 
-fn read_triangle(reader: &mut Read) -> model::Triangle {
-    let mut triangle: model::Triangle = unsafe { mem::uninitialized() };
-
-    reader.read_u32_into::<BigEndian>(&mut triangle.indices).unwrap();
-    triangle.material = reader.read_u8().unwrap();
-
-    triangle
-}
-
 fn read_and_box<T, F>(reader: &mut Read, read_fn: F) -> Box<[T]> 
     where F: Fn(&mut Read) -> T {
 
-    let num_items = reader.read_u16::<BigEndian>().unwrap() as usize;
+    let num_items = reader.read_u32::<BigEndian>().unwrap() as usize;
 
     let mut items = Vec::with_capacity(num_items);
 
@@ -132,12 +123,15 @@ fn read_and_box<T, F>(reader: &mut Read, read_fn: F) -> Box<[T]>
 }
 
 pub fn load_model(reader: &mut Read) -> model::Model {
-    let name = read_string(reader);
-    let transform = read_transform(reader);
-    let materials = read_and_box(reader, read_material);
+    let name = String::from("");//read_string(reader);
+    let transform = Decomposed::<Vector3<f32>, Basis3<f32>> {
+				scale: 1.0,
+				rot: Basis3::from_angle_x(Deg(-90.0)),
+				disp: Vector3::new(0.0, 0.0, -2.75),
+			}.into();//read_transform(reader);
+    let materials = Box::new([]);//read_and_box(reader, read_material);
     let vertices = read_and_box(reader, read_vertex);
     let texcoords = read_and_box(reader, read_texcoord);
-    let triangles = read_and_box(reader, read_triangle);
 
     model::Model {
         name,
@@ -145,6 +139,5 @@ pub fn load_model(reader: &mut Read) -> model::Model {
         materials,
         vertices,
         texcoords,
-        triangles,
     }
 }

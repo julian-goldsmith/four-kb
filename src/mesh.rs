@@ -27,7 +27,6 @@ impl Mesh {
 	pub fn new(program: Program, 
 			   vertex_data: &[Vector3<GLfloat>],
 			   normals: &Image,
-               index_data: &[i32],
 			   texcoord_data: &[Vector2<GLfloat>],
 			   image: &Image,
 			   geom_type: GeometryType) -> Mesh {
@@ -39,7 +38,7 @@ impl Mesh {
 		let texcoords = VBO::new(texcoord_data).unwrap();
 		let vao = VAO::new(verts, texcoords, &program);
 
-		Mesh { program, vao, tex, normal_tex, num_verts: index_data.len() as u32, geom_type, }
+		Mesh { program, vao, tex, normal_tex, num_verts: vertex_data.len() as u32, geom_type, }
 	}
 	
 	pub fn draw(&self, proj: &Matrix4<GLfloat>, transform: &cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>) {
