@@ -75,14 +75,14 @@ fn main() {
 
         let trans = Decomposed::<Vector3<f32>, Basis3<f32>> {
                     scale: 1.0,
-                    rot: Basis3::from_angle_y(Deg(deg)),
+                    rot: Basis3::from_angle_y(Deg(deg)) * Basis3::from_angle_x(Deg(-90.0)),
                     disp: Vector3::new(0.0, 0.0, -2.75),
                 }.into();//read_transform(reader);
 		//object.draw(proj);
         let mproj = proj.into();
         mdl.draw(&mproj, &trans);
 
-        deg += 2.0;
+        //deg += 2.0;
 
         window.swap_buffers().unwrap();
 

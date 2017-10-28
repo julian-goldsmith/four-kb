@@ -126,7 +126,7 @@ pub fn load_model(reader: &mut Read) -> model::Model {
     let name = String::from("");//read_string(reader);
     let transform = Decomposed::<Vector3<f32>, Basis3<f32>> {
 				scale: 1.0,
-				rot: Basis3::from_angle_x(Deg(-90.0)),
+				rot: Basis3::from_angle_x(Deg(90.0)),
 				disp: Vector3::new(0.0, 0.0, -2.75),
 			}.into();//read_transform(reader);
     let materials = Box::new([]);//read_and_box(reader, read_material);
