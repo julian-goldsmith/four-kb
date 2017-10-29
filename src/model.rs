@@ -1,5 +1,5 @@
 use cgmath::{Vector2, Vector3, Matrix4};
-use mesh::{Mesh, GeometryType};
+use mesh::Mesh;
 use std::iter::Iterator;
 use std::path::Path;
 use image;
@@ -36,6 +36,8 @@ impl From<Model> for Mesh {
         let normals = image::load_image(&Path::new("assets/normals.png")).unwrap();
 		let program = Program::from_path(&Path::new("assets/shader.vert"), &Path::new("assets/shader.frag"));
 
-        Mesh::new(program, &model.vertices[0..], &normals, &model.texcoords[0..], &image, GeometryType::Tris)
+        let indices = (0..model.vertices.len()).map(|i| i as u32).collect::<Vec<_>>();
+
+        Mesh::new(program, &indices[0..], &model.vertices[0..], &normals, &model.texcoords[0..], &image)
     }
 }

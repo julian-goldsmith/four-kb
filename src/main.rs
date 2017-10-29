@@ -71,7 +71,7 @@ fn main() {
         unsafe {
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
+        };
 
         let trans = Decomposed::<Vector3<f32>, Basis3<f32>> {
                     scale: 1.0,
@@ -82,7 +82,7 @@ fn main() {
         let mproj = proj.into();
         mdl.draw(&mproj, &trans);
 
-        //deg += 2.0;
+        deg += 2.0;
 
         window.swap_buffers().unwrap();
 
@@ -109,11 +109,11 @@ fn main() {
         frames = frames + 1;
         duration = duration + frame_duration;
 
-        if duration > Duration::seconds(1) {
+        if duration >= Duration::seconds(1) {
             println!("{} FPS", frames);
 
             frames = 0;
             duration = Duration::zero();
-        }
-    }
+        };
+    };
 }

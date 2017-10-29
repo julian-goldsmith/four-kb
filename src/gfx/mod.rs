@@ -18,8 +18,7 @@ impl VBO {
 		let mut vbo = VBO { id: 0 };
 
 		if data.len() == 0 {
-			//FIXME: return None;
-			return Some(vbo);
+            panic!("Attempted to create invalid VBO");
 		}
 		
 		unsafe {
@@ -42,6 +41,45 @@ impl VBO {
 }
 
 impl Drop for VBO {
+	fn drop(&mut self) {
+		unsafe {
+			gl::DeleteBuffers(1, &self.id);
+		}
+	}
+}
+
+pub struct IBO {
+	id: GLuint,
+}
+
+impl IBO {
+	pub fn new<T>(data: &[T]) -> Option<IBO> {
+		let mut ibo = IBO { id: 0 };
+
+		if data.len() == 0 {
+            panic!("Attempted to create invalid IBO");
+		}
+		
+		unsafe {
+			gl::GenBuffers(1, &mut ibo.id);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo.id);
+			gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,
+						   (data.len() * mem::size_of::<T>()) as GLsizeiptr,
+						   mem::transmute(&data[0]),
+						   gl::STATIC_DRAW);
+		};
+		
+		Some(ibo)
+	}
+	
+	pub fn bind(&self) {
+		unsafe {
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.id);
+		}
+	}
+}
+
+impl Drop for IBO {
 	fn drop(&mut self) {
 		unsafe {
 			gl::DeleteBuffers(1, &self.id);
