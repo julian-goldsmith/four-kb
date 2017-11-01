@@ -18,7 +18,7 @@ use std::io::BufReader;
 //use object::Object;
 use time::Duration;
 use mesh::Mesh;
-use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3};
+use cgmath::{Vector3,Decomposed,Basis3,Deg,Rotation3};
 
 fn main() {
 	let events_loop = glutin::EventsLoop::new();
@@ -63,8 +63,6 @@ fn main() {
     let mut frames = 0;
     let mut duration = Duration::zero();
 
-    let mut deg = 0.0;
-
     while running {
         let time1 = time::get_time();
 
@@ -81,8 +79,6 @@ fn main() {
 
         mdl.draw(&view, &proj);
 
-        deg += 2.0;
-
         window.swap_buffers().unwrap();
 
 		events_loop.poll_events(|event| {
@@ -93,9 +89,9 @@ fn main() {
                 glutin::Event::WindowEvent { event: glutin::WindowEvent::Resized(width, height), .. } => {
                     proj = cgmath::PerspectiveFov {
                         fovy: cgmath::Deg(90.0).into(),
-                        aspect: width as f32 / height as f32,
-                        near: 1.0,
-                        far: 20.0,
+                        aspect: 1.0,//height as f32 / width as f32,
+                        near: 0.1,
+                        far: 100.0,
                     };
                 },
 				_ => (),
