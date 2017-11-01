@@ -3,7 +3,7 @@ use gl;
 use gl::types::*;
 use cgmath;
 use cgmath::prelude::*;
-use cgmath::{Matrix4, Vector3, Basis3, Vector2};
+use cgmath::{Matrix4, Vector3, Basis3, Vector2, Decomposed, PerspectiveFov};
 use image::Image;
 use gfx::*;
 use gfx::program::Program;
@@ -14,6 +14,7 @@ pub struct Mesh {
 	pub vao: VAO,
 	pub tex: Texture,
 	pub normal_tex: Texture,
+    pub transform: Matrix4<f32>,
 
 	pub num_verts: u32,
 }
@@ -24,7 +25,8 @@ impl Mesh {
 			   vertex_data: &[Vector3<GLfloat>],
 			   normals: &Image,
 			   texcoord_data: &[Vector2<GLfloat>],
-			   image: &Image) -> Mesh {
+			   image: &Image,
+               transform: Matrix4<f32>) -> Mesh {
 
 		let tex = Texture::new(image);
 		let normal_tex = Texture::new(normals);
@@ -34,12 +36,12 @@ impl Mesh {
 		let texcoords = VBO::new(texcoord_data).unwrap();
 		let vao = VAO::new(verts, texcoords, &program);
 
-		Mesh { program, ibo, vao, tex, normal_tex, num_verts: index_data.len() as u32, }
+		Mesh { program, ibo, vao, tex, normal_tex, transform, num_verts: index_data.len() as u32, }
 	}
 	
-	pub fn draw(&self, proj: &Matrix4<GLfloat>, transform: &cgmath::Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>) {
-		let trans = transform.clone().into();
-		let view = <cgmath::Matrix4<f32> as One>::one();
+	pub fn draw(&self, view: &Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>, proj: &PerspectiveFov<f32>) {
+		let view = view.clone().into();
+        let proj = proj.clone().into();
 
         self.ibo.bind();
 		
@@ -50,8 +52,8 @@ impl Mesh {
 		self.normal_tex.bind();
 
 		self.program.bind();
-		self.program.bind_uniform_matrix4("trans", &trans);
-		self.program.bind_uniform_matrix4("proj", proj);
+		self.program.bind_uniform_matrix4("trans", &self.transform);
+		self.program.bind_uniform_matrix4("proj", &proj);
 		self.program.bind_uniform_matrix4("view", &view);
 		self.program.bind_uniform_int32("tex", self.tex.tex_unit as i32);
 		self.program.bind_uniform_int32("normal_tex", self.normal_tex.tex_unit as i32);

@@ -8,14 +8,14 @@ extern crate time;
 mod mesh;
 mod image;
 mod gfx;
-mod object;
+//mod object;
 mod model;
 mod model_loader;
 
 use std::fs::File;
 use std::path::Path;
 use std::io::BufReader;
-use object::Object;
+//use object::Object;
 use time::Duration;
 use mesh::Mesh;
 use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3};
@@ -73,14 +73,13 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         };
 
-        let trans = Decomposed::<Vector3<f32>, Basis3<f32>> {
-                    scale: 1.0,
-                    rot: Basis3::from_angle_y(Deg(deg)) * Basis3::from_angle_x(Deg(-90.0)),
-                    disp: Vector3::new(0.0, 0.0, -2.75),
-                }.into();//read_transform(reader);
-		//object.draw(proj);
-        let mproj = proj.into();
-        mdl.draw(&mproj, &trans);
+        let view = Decomposed::<Vector3<f32>, Basis3<f32>> {
+            scale: 1.0,
+            rot: Basis3::from_angle_x(Deg(-90.0)),
+            disp: Vector3::new(0.0, 0.0, 0.0),
+        };
+
+        mdl.draw(&view, &proj);
 
         deg += 2.0;
 

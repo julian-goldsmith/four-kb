@@ -1,12 +1,12 @@
 target/
 **/*.rs.bk
-Cargo.lock
 *.bat
 *.md2
 *.bmp
 *.png
 *.fbx
 *.blend
+*.blend1
 out.txt
 *.swp
-assets/
+*.mdl

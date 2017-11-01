@@ -26,6 +26,7 @@ pub struct Model {
 	pub name: String,
 	pub transform: Matrix4<f32>,
 	pub materials: Box<[Material]>,
+    pub indices: Box<[u32]>,
 	pub vertices: Box<[Vector3<f32>]>,
 	pub texcoords: Box<[Vector2<f32>]>,
 }
@@ -35,9 +36,9 @@ impl From<Model> for Mesh {
         let image = image::load_image(&Path::new("assets/monkey.png")).unwrap();
         let normals = image::load_image(&Path::new("assets/normals.png")).unwrap();
 		let program = Program::from_path(&Path::new("assets/shader.vert"), &Path::new("assets/shader.frag"));
+        
+        println!("{:?}", &model.transform);
 
-        let indices = (0..model.vertices.len()).map(|i| i as u32).collect::<Vec<_>>();
-
-        Mesh::new(program, &indices[0..], &model.vertices[0..], &normals, &model.texcoords[0..], &image)
+        Mesh::new(program, &model.indices[0..], &model.vertices[0..], &normals, &model.texcoords[0..], &image, model.transform)
     }
 }

@@ -2,7 +2,7 @@ use std::io::Read;
 use std::mem;
 use model;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
-use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3};
+use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3, Matrix};
 
 fn read_bool(reader: &mut Read) -> bool {
     let mut buf = [0];
@@ -26,7 +26,12 @@ fn read_string(reader: &mut Read) -> String {
 }
 
 fn read_transform(reader: &mut Read) -> Matrix4<f32> {
-    let mut buf = [0; 3 * 3 * 4];
+    let mut buf = Vec::with_capacity(mem::size_of::<Matrix4<f32>>());
+
+    unsafe {
+        buf.set_len(mem::size_of::<Matrix4<f32>>());
+    };
+
     reader.read(&mut buf);
 
     let mut matrix: Matrix4<f32> = unsafe { mem::uninitialized() };
@@ -106,6 +111,12 @@ fn read_texcoord(reader: &mut Read) -> Vector2<f32> {
     texcoord
 }
 
+fn read_index(reader: &mut Read) -> u32 {
+    unsafe {
+        reader.read_u32::<BigEndian>().unwrap()
+    }
+}
+
 fn read_and_box<T, F>(reader: &mut Read, read_fn: F) -> Box<[T]> 
     where F: Fn(&mut Read) -> T {
 
@@ -124,12 +135,9 @@ fn read_and_box<T, F>(reader: &mut Read, read_fn: F) -> Box<[T]>
 
 pub fn load_model(reader: &mut Read) -> model::Model {
     let name = String::from("");//read_string(reader);
-    let transform = Decomposed::<Vector3<f32>, Basis3<f32>> {
-				scale: 1.0,
-				rot: Basis3::from_angle_x(Deg(90.0)),
-				disp: Vector3::new(0.0, 0.0, -2.75),
-			}.into();//read_transform(reader);
+    let transform = read_transform(reader);
     let materials = Box::new([]);//read_and_box(reader, read_material);
+    let indices = read_and_box(reader, read_index);
     let vertices = read_and_box(reader, read_vertex);
     let texcoords = read_and_box(reader, read_texcoord);
 
@@ -137,6 +145,7 @@ pub fn load_model(reader: &mut Read) -> model::Model {
         name,
         transform,
         materials,
+        indices,
         vertices,
         texcoords,
     }
