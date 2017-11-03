@@ -51,7 +51,7 @@ fn read_texture(reader: &mut Read) -> Option<model::Texture> {
     let width = reader.read_u16::<BigEndian>().unwrap();
     let height = reader.read_u16::<BigEndian>().unwrap();
     let num_pixels = width as usize * height as usize;
-    let mut size = Vector2::<u16>::new(width, height);
+    let size = Vector2::<u16>::new(width, height);
     
     let mut pixels: Vec<Vector3<u8>> = Vec::with_capacity(num_pixels);
 
@@ -112,9 +112,7 @@ fn read_texcoord(reader: &mut Read) -> Vector2<f32> {
 }
 
 fn read_index(reader: &mut Read) -> u32 {
-    unsafe {
-        reader.read_u32::<BigEndian>().unwrap()
-    }
+    reader.read_u32::<BigEndian>().unwrap()
 }
 
 fn read_and_box<T, F>(reader: &mut Read, read_fn: F) -> Box<[T]> 

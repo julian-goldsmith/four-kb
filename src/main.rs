@@ -8,32 +8,29 @@ extern crate time;
 mod mesh;
 mod image;
 mod gfx;
-//mod object;
 mod model;
 mod model_loader;
 
 use std::fs::File;
 use std::path::Path;
-use std::io::BufReader;
-//use object::Object;
 use time::Duration;
 use mesh::Mesh;
 use cgmath::{Vector3,Decomposed,Basis3,Deg,Rotation3};
+use glutin::GlContext;
 
 fn main() {
-	let events_loop = glutin::EventsLoop::new();
-    let window = glutin::WindowBuilder::new().
-		with_vsync().
-		build(&events_loop).
-		unwrap();
+	let mut events_loop = glutin::EventsLoop::new();
+    let window = glutin::WindowBuilder::new().with_title("four-kb");
+    let context = glutin::ContextBuilder::new();
+    let gl_window = glutin::GlWindow::new(window, context, &events_loop).unwrap();
 
     // It is essential to make the context current before calling `gl::load_with`.
-    unsafe { window.make_current() }.unwrap();
+    let _ = unsafe { gl_window.make_current() };
 
     // Load the OpenGL function pointers
     // TODO: `as *const _` will not be needed once glutin is updated to the latest gl version
-    gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
-	
+    gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
+
 	let mdl: Mesh = {
         let mut file = File::open(&Path::new("assets/monkey.mdl")).unwrap();
         let mdl = model_loader::load_model(&mut file);
@@ -50,10 +47,10 @@ fn main() {
 	}
 
 	//let mut object: Object = mdl.into();
-	
+    
 	let mut proj = cgmath::PerspectiveFov {
 		fovy: cgmath::Deg(90.0).into(),
-		aspect: 4.0/3.0,
+		aspect: 1.0,                                // placeholder, window will receive resize event on first frame
 		near: 1.0,
 		far: 20.0,
     };
@@ -79,19 +76,26 @@ fn main() {
 
         mdl.draw(&view, &proj);
 
-        window.swap_buffers().unwrap();
+        gl_window.swap_buffers().unwrap();
 
 		events_loop.poll_events(|event| {
 			match event {
 				glutin::Event::WindowEvent { event: glutin::WindowEvent::Closed, .. } => {
 					running = false;
 				},
+
                 glutin::Event::WindowEvent { event: glutin::WindowEvent::Resized(width, height), .. } => {
+                    gl_window.resize(width, height);
+
                     proj = cgmath::PerspectiveFov {
                         fovy: cgmath::Deg(90.0).into(),
-                        aspect: 1.0,//height as f32 / width as f32,
+                        aspect: width as f32 / height as f32,
                         near: 0.1,
                         far: 100.0,
+                    };
+
+                    unsafe {
+                        gl::Viewport(0, 0, width as i32, height as i32);
                     };
                 },
 				_ => (),
