@@ -39,9 +39,8 @@ impl Mesh {
 		Mesh { program, ibo, vao, tex, normal_tex, transform, num_verts: index_data.len() as u32, }
 	}
 	
-	pub fn draw(&self, view: &Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>, proj: &PerspectiveFov<f32>) {
+	pub fn draw(&self, view: &Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>, proj: &Matrix4<f32>) {
 		let view = view.clone().into();
-        let proj = proj.clone().into();
 
         self.ibo.bind();
 		

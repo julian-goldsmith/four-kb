@@ -10,10 +10,9 @@ mod scene;
 use std::fs::File;
 use std::path::Path;
 use time::Duration;
-use gfx::mesh::Mesh;
-use gfx::model::model_loader;
 use cgmath::{Vector3,Decomposed,Basis3,Deg,Rotation3};
 use glutin::GlContext;
+use gfx::model::model_loader;
 
 fn init_gl() -> (glutin::EventsLoop, glutin::GlWindow) {
 	let events_loop = glutin::EventsLoop::new();
@@ -42,16 +41,24 @@ fn init_gl() -> (glutin::EventsLoop, glutin::GlWindow) {
 fn main() {
     let (mut events_loop, gl_window) = init_gl();
 
-	let mdl: Mesh = {
-        let mut file = File::open(&Path::new("assets/monkey.mdl")).unwrap();
-        let mdl = model_loader::load_model(&mut file);
-        mdl.into()
-	};
+    let mut scene = scene::Scene {
+        objects: Vec::new(),
+    };
 
-	//let mut object: Object = mdl.into();
+    let mut file = File::open(&Path::new("assets/monkey.mdl")).unwrap();
+    let mdl = model_loader::load_model(&mut file);
+
+    scene.objects.push(Box::new(scene::MeshObject {
+        mesh: mdl.into(),
+        view: Decomposed::<Vector3<f32>, Basis3<f32>> {
+            scale: 1.0,
+            rot: Basis3::from_angle_x(Deg(-90.0)),
+            disp: Vector3::new(0.0, 0.0, 0.0),
+        },
+    }));
     
 	let mut proj = cgmath::PerspectiveFov {
-		fovy: cgmath::Deg(90.0).into(),
+		fovy: Deg(90.0).into(),
 		aspect: 1.0,                                // placeholder, window will receive resize event on first frame
 		near: 1.0,
 		far: 20.0,
@@ -63,6 +70,8 @@ fn main() {
     let mut duration = Duration::zero();
 
     while running {
+        scene.think(time::get_time());
+
         let time1 = time::get_time();
 
         unsafe {
@@ -70,13 +79,8 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         };
 
-        let view = Decomposed::<Vector3<f32>, Basis3<f32>> {
-            scale: 1.0,
-            rot: Basis3::from_angle_x(Deg(-90.0)),
-            disp: Vector3::new(0.0, 0.0, 0.0),
-        };
-
-        mdl.draw(&view, &proj);
+        let proj_mat = proj.into();
+        scene.render(&proj_mat);
 
         gl_window.swap_buffers().unwrap();
 
@@ -90,7 +94,7 @@ fn main() {
                     gl_window.resize(width, height);
 
                     proj = cgmath::PerspectiveFov {
-                        fovy: cgmath::Deg(90.0).into(),
+                        fovy: Deg(90.0).into(),
                         aspect: width as f32 / height as f32,
                         near: 0.1,
                         far: 100.0,
