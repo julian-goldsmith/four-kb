@@ -3,7 +3,6 @@ extern crate cgmath;
 extern crate gl;
 extern crate glutin;
 extern crate png;
-extern crate fbx_direct;
 extern crate time;
 mod mesh;
 mod image;
@@ -28,7 +27,6 @@ fn main() {
     let _ = unsafe { gl_window.make_current() };
 
     // Load the OpenGL function pointers
-    // TODO: `as *const _` will not be needed once glutin is updated to the latest gl version
     gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
 
 	let mdl: Mesh = {
