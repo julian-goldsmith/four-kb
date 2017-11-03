@@ -1,9 +1,9 @@
-use cgmath::{Vector2, Vector3, Matrix4};
-use mesh::Mesh;
 use std::iter::Iterator;
 use std::path::Path;
-use image;
-use gfx::program::Program;
+use cgmath::{Vector2, Vector3, Matrix4};
+use gfx::mesh::Mesh;
+use gfx::image;
+use gfx::lowlevel::program::Program;
 
 #[derive(Debug)]
 pub struct Texture {

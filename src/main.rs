@@ -4,16 +4,14 @@ extern crate gl;
 extern crate glutin;
 extern crate png;
 extern crate time;
-mod mesh;
-mod image;
 mod gfx;
-mod model;
-mod model_loader;
+mod scene;
 
 use std::fs::File;
 use std::path::Path;
 use time::Duration;
-use mesh::Mesh;
+use gfx::mesh::Mesh;
+use gfx::model_loader;
 use cgmath::{Vector3,Decomposed,Basis3,Deg,Rotation3};
 use glutin::GlContext;
 

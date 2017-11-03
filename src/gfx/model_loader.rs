@@ -1,6 +1,6 @@
 use std::io::Read;
 use std::mem;
-use model;
+use gfx::model;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3, Matrix};
 

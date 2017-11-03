@@ -4,9 +4,9 @@ use gl::types::*;
 use cgmath;
 use cgmath::prelude::*;
 use cgmath::{Matrix4, Vector3, Basis3, Vector2, Decomposed, PerspectiveFov};
-use image::Image;
-use gfx::*;
-use gfx::program::Program;
+use gfx::image::Image;
+use gfx::lowlevel::*;
+use gfx::lowlevel::program::Program;
 
 pub struct Mesh {
 	pub program: Program,
