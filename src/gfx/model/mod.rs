@@ -5,6 +5,8 @@ use gfx::mesh::Mesh;
 use gfx::image;
 use gfx::lowlevel::program::Program;
 
+pub mod model_loader;
+
 #[derive(Debug)]
 pub struct Texture {
 	pub size: Vector2<u16>,

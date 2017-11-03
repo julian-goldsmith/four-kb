@@ -11,12 +11,12 @@ use std::fs::File;
 use std::path::Path;
 use time::Duration;
 use gfx::mesh::Mesh;
-use gfx::model_loader;
+use gfx::model::model_loader;
 use cgmath::{Vector3,Decomposed,Basis3,Deg,Rotation3};
 use glutin::GlContext;
 
-fn main() {
-	let mut events_loop = glutin::EventsLoop::new();
+fn init_gl() -> (glutin::EventsLoop, glutin::GlWindow) {
+	let events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new().with_title("four-kb");
     let context = glutin::ContextBuilder::new();
     let gl_window = glutin::GlWindow::new(window, context, &events_loop).unwrap();
@@ -27,12 +27,6 @@ fn main() {
     // Load the OpenGL function pointers
     gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
 
-	let mdl: Mesh = {
-        let mut file = File::open(&Path::new("assets/monkey.mdl")).unwrap();
-        let mdl = model_loader::load_model(&mut file);
-        mdl.into()
-	};
-
 	unsafe {
 		gl::Enable(gl::DEPTH_TEST);
 		gl::Enable(gl::CULL_FACE);
@@ -41,6 +35,18 @@ fn main() {
 		gl::ActiveTexture(gl::TEXTURE1);
 		gl::ActiveTexture(gl::TEXTURE2);
 	}
+
+    (events_loop, gl_window)
+}
+
+fn main() {
+    let (mut events_loop, gl_window) = init_gl();
+
+	let mdl: Mesh = {
+        let mut file = File::open(&Path::new("assets/monkey.mdl")).unwrap();
+        let mdl = model_loader::load_model(&mut file);
+        mdl.into()
+	};
 
 	//let mut object: Object = mdl.into();
     
