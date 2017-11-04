@@ -110,20 +110,6 @@ impl Program {
 			gl::UseProgram(self.id);
 		};
 	}
-	
-	pub fn bind_uniform_matrix4(&self, name: &str, value: &Matrix4<f32>) {
-		unsafe {
-			let loc = gl::GetUniformLocation(self.id, CString::new(name).unwrap().as_ptr());
-			gl::UniformMatrix4fv(loc, 1, gl::FALSE, value.as_ptr());
-		};
-	}
-	
-	pub fn bind_uniform_int32(&self, name: &str, value: i32) {
-		unsafe {
-			let loc = gl::GetUniformLocation(self.id, CString::new(name).unwrap().as_ptr());
-			gl::Uniform1i(loc, value);
-		};
-	}
 }
 
 impl Drop for Program {

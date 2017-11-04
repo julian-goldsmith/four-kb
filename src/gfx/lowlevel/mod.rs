@@ -7,7 +7,9 @@ use gl::types::*;
 use gfx::image::Image;
 
 pub mod program;
-use self::program::*;
+pub mod uniform;
+pub use self::program::*;
+pub use self::uniform::*;
 
 pub struct VBO {
 	id: GLuint,
