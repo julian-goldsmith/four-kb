@@ -14,7 +14,7 @@ impl SceneObject for MeshObject {
     }
 
     fn think(&mut self, time: time::Timespec) {
-        self.view.rot = self.view.rot * Basis3::from_angle_y(Deg(2.0));
+        self.view.rot = self.view.rot * Basis3::from_angle_z(Deg(2.0));
     }
 
     fn get_transform(&self) -> Decomposed<Vector3<f32>, Basis3<f32>> {

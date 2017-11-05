@@ -14,9 +14,7 @@ uniform mat4 proj;
 uniform mat4 view;
 
 void main() {
-	mat4 mvp = proj * view * trans;
-	
-	vec3 LightPosition_worldspace = vec3(0, 0, 0);
+	vec3 LightPosition_worldspace = vec3(3, 0, 5);
 	
 	Position_worldspace = (trans * vec4(position, 1)).xyz;
 	
@@ -29,5 +27,6 @@ void main() {
 	dist = distance(Position_worldspace, LightPosition_worldspace);
 	
 	Texcoord = texcoord;
-	gl_Position = mvp * vec4(position, 1.0);
+	
+	gl_Position = proj * view * trans * vec4(position, 1.0);
 }

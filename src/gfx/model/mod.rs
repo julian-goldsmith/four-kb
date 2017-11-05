@@ -35,8 +35,8 @@ pub struct Model {
 
 impl From<Model> for Mesh {
     fn from(model: Model) -> Mesh {
-        let image = image::load_image(&Path::new("assets/monkey.png")).unwrap();
-        let normals = image::load_image(&Path::new("assets/normals.png")).unwrap();
+        let image = image::load_image(&Path::new("assets/levi_displacement.png")).unwrap();
+        let normals = image::load_image(&Path::new("assets/levi_normals.png")).unwrap();
 		let program = Program::from_path(&Path::new("assets/shader.vert"), &Path::new("assets/shader.frag"));
 
         Mesh::new(program, &model.indices[0..], &model.vertices[0..], &normals, &model.texcoords[0..], &image, model.transform)

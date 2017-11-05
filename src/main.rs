@@ -45,7 +45,7 @@ fn main() {
         objects: Vec::new(),
     };
 
-    let mut file = File::open(&Path::new("assets/monkey.mdl")).unwrap();
+    let mut file = File::open(&Path::new("assets/stylized_levi.mdl")).unwrap();
     let mdl = model_loader::load_model(&mut file);
 
     scene.objects.push(Box::new(scene::MeshObject {
@@ -53,7 +53,7 @@ fn main() {
         view: Decomposed::<Vector3<f32>, Basis3<f32>> {
             scale: 1.0,
             rot: Basis3::from_angle_x(Deg(-90.0)),
-            disp: Vector3::new(0.0, 0.0, 0.0),
+            disp: Vector3::new(0.0, 0.0, -2.0),
         },
     }));
     
