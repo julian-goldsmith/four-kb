@@ -23,8 +23,8 @@ impl Material {
 
         Material {
             program,
-            diffuse_tex: Texture::new(diffuse_image),
-            normal_tex: Texture::new(normal_image),
+            diffuse_tex: Texture::new("diffuse", diffuse_image),
+            normal_tex: Texture::new("normal", normal_image),
         }
     }
 

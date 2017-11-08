@@ -30,20 +30,25 @@ impl Program {
 			gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status);
 
 			// Fail on error
-			if status != (gl::TRUE as GLint) {
-				let mut len = 0;
-				gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
+            let mut len = 0;
+            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
+
+            if len > 0 {
 				let mut buf = Vec::with_capacity(len as usize);
 				buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
 				gl::GetShaderInfoLog(shader,
 									 len,
 									 ptr::null_mut(),
 									 buf.as_mut_ptr() as *mut GLchar);
-				panic!("{}",
+				println!("{}",
 					   str::from_utf8(&buf)
 						   .ok()
 						   .expect("ShaderInfoLog not valid utf8"));
-			}
+            };
+
+			if status != (gl::TRUE as GLint) {
+                panic!("Shader failed to link");
+			};
 		};
 		shader
 	}
@@ -63,22 +68,26 @@ impl Program {
 			gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
 
 			// Fail on error
+            let mut len: GLint = 0;
+            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
+            
+            if len > 0 {
+                let mut buf = Vec::with_capacity(len as usize);
+                buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
+                
+                gl::GetProgramInfoLog(program,
+                                      len,
+                                      ptr::null_mut(),
+                                      buf.as_mut_ptr() as *mut GLchar);
+                                      
+                println!("{}",
+                       str::from_utf8(&buf)
+                           .ok()
+                           .expect("ProgramInfoLog not valid utf8"));
+            }
+
 			if status != (gl::TRUE as GLint) {
-				let mut len: GLint = 0;
-				gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
-				
-				let mut buf = Vec::with_capacity(len as usize);
-				buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
-				
-				gl::GetProgramInfoLog(program,
-									  len,
-									  ptr::null_mut(),
-									  buf.as_mut_ptr() as *mut GLchar);
-									  
-				panic!("{}",
-					   str::from_utf8(&buf)
-						   .ok()
-						   .expect("ProgramInfoLog not valid utf8"));
+                panic!("Shader failed to compile");
 			}
 			
 			Program { vs, fs, id: program }

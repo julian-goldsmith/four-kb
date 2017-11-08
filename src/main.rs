@@ -10,7 +10,7 @@ mod scene;
 use std::fs::File;
 use std::path::Path;
 use time::Duration;
-use cgmath::{Vector3,Decomposed,Basis3,Deg,Rotation3};
+use cgmath::{Vector3,Decomposed,Basis3,Deg,Rotation3,One};
 use glutin::GlContext;
 use gfx::model::model_loader;
 
@@ -50,18 +50,24 @@ fn main() {
 
     scene.objects.push(Box::new(scene::MeshObject {
         mesh: mdl.into(),
-        view: Decomposed::<Vector3<f32>, Basis3<f32>> {
+        trans: Decomposed::<Vector3<f32>, Basis3<f32>> {
             scale: 1.0,
             rot: Basis3::from_angle_x(Deg(-90.0)),
-            disp: Vector3::new(0.0, 0.0, -2.0),
+            disp: Vector3::new(0.0, -2.0, -1.0),
         },
     }));
+
+    let view = Decomposed::<Vector3<f32>, Basis3<f32>> {
+        scale: 1.0,
+        rot: Basis3::one(),
+        disp: Vector3::new(0.0, 0.0, 0.0),
+    };
     
 	let mut proj = cgmath::PerspectiveFov {
 		fovy: Deg(90.0).into(),
 		aspect: 1.0,                                // placeholder, window will receive resize event on first frame
-		near: 1.0,
-		far: 20.0,
+		near: 0.1,
+		far: 100.0,
     };
 
 	let mut running = true;
@@ -80,7 +86,7 @@ fn main() {
         };
 
         let proj_mat = proj.into();
-        scene.render(&proj_mat);
+        scene.render(&view, &proj_mat);
 
         gl_window.swap_buffers().unwrap();
 

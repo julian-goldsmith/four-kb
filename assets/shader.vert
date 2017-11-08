@@ -4,29 +4,27 @@ in vec3 position;
 in vec2 texcoord;
 
 out vec2 Texcoord;
-out vec3 Position_worldspace;
-out vec3 EyeDirection_cameraspace;
-out vec3 LightDirection_cameraspace;
-out float dist;
+out vec3 position_ws;
+out vec3 eyedir_ws;
+out vec3 lightdir_ws;
+out mat4 normal_mat;
 
 uniform mat4 trans;
 uniform mat4 proj;
 uniform mat4 view;
 
 void main() {
-	vec3 LightPosition_worldspace = vec3(3, 0, 5);
+	vec3 lightpos_ws = vec3(0, 0, 0);
+	vec3 camerapos_ws = vec3(0, 0, 0);			/* FIXME: make a uniform */
 	
-	Position_worldspace = (trans * vec4(position, 1)).xyz;
+	position_ws = (trans * vec4(position, 1)).xyz;
 	
-	vec3 vertexPosition_cameraspace = (view * trans * vec4(position, 1)).xyz;
-	EyeDirection_cameraspace = normalize(vec3(0, 0, 0) - vertexPosition_cameraspace);
-	
-	vec3 LightPosition_cameraspace = (view * vec4(LightPosition_worldspace, 1)).xyz;
-	LightDirection_cameraspace = normalize(LightPosition_cameraspace + EyeDirection_cameraspace);
-	
-	dist = distance(Position_worldspace, LightPosition_worldspace);
+	lightdir_ws = normalize(lightpos_ws - position_ws);
+	eyedir_ws = normalize(camerapos_ws - position_ws);
+
+	normal_mat = transpose(inverse(view * trans));
 	
 	Texcoord = texcoord;
 	
-	gl_Position = proj * view * trans * vec4(position, 1.0);
+	gl_Position = proj * view * vec4(position_ws, 1.0);
 }

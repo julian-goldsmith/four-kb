@@ -5,19 +5,20 @@ use scene::SceneObject;
 
 pub struct MeshObject {
     pub mesh: Mesh,
-    pub view: Decomposed<Vector3<f32>, Basis3<f32>>,
+    pub trans: Decomposed<Vector3<f32>, Basis3<f32>>,
 }
 
 impl SceneObject for MeshObject {
-    fn render(&self, proj: &Matrix4<f32>) {
-        self.mesh.draw(&self.view, proj);
+    fn render(&self, view: &Decomposed<Vector3<f32>, Basis3<f32>>, proj: &Matrix4<f32>) {
+        self.mesh.draw(view, proj);
     }
 
     fn think(&mut self, time: time::Timespec) {
-        self.view.rot = self.view.rot * Basis3::from_angle_z(Deg(2.0));
+        self.trans.rot = self.trans.rot * Basis3::from_angle_z(Deg(2.0));
+        self.mesh.transform = self.trans.clone().into();        // FIXME: optimize
     }
 
     fn get_transform(&self) -> Decomposed<Vector3<f32>, Basis3<f32>> {
-        self.view.clone()
+        self.trans.clone()
     }
 }

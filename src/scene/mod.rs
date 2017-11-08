@@ -5,7 +5,7 @@ mod mesh_object;
 pub use self::mesh_object::MeshObject;
 
 pub trait SceneObject {
-    fn render(&self, proj: &Matrix4<f32>);
+    fn render(&self, view: &Decomposed<Vector3<f32>, Basis3<f32>>, proj: &Matrix4<f32>);
     fn think(&mut self, time: time::Timespec);
     fn get_transform(&self) -> Decomposed<Vector3<f32>, Basis3<f32>>;
 }
@@ -21,9 +21,9 @@ impl Scene {
         };
     }
 
-    pub fn render(&self, proj: &Matrix4<f32>) {
+    pub fn render(&self, view: &Decomposed<Vector3<f32>, Basis3<f32>>, proj: &Matrix4<f32>) {
         for object in &self.objects {
-            object.render(proj);
+            object.render(view, proj);
         };
     }
 }
