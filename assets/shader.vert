@@ -7,7 +7,7 @@ out vec2 Texcoord;
 out vec3 position_ws;
 out vec3 eyedir_ws;
 out vec3 lightdir_ws;
-out mat4 normal_mat;
+out mat3 normal_mat;
 
 uniform mat4 trans;
 uniform mat4 proj;
@@ -22,7 +22,7 @@ void main() {
 	lightdir_ws = normalize(lightpos_ws - position_ws);
 	eyedir_ws = normalize(camerapos_ws - position_ws);
 
-	normal_mat = transpose(inverse(view * trans));
+	normal_mat = mat3(transpose(inverse(trans)));
 	
 	Texcoord = texcoord;
 	

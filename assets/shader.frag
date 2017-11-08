@@ -4,7 +4,7 @@ in vec2 Texcoord;
 in vec3 position_ws;
 in vec3 eyedir_ws;
 in vec3 lightdir_ws;
-in mat4 normal_mat;
+in mat3 normal_mat;
 
 out vec4 out_color;
 
@@ -21,7 +21,7 @@ void main() {
 	vec4 mat_color = texture(tex, Texcoord);
 
 	vec3 normal_val = texture(normal_tex, Texcoord).rgb;
-	vec3 normal = normalize(normal_mat * vec4(normal_val, 0)).xyz;
+	vec3 normal = normalize(normal_mat * normal_val);
 	vec3 normal_ws = (normal * 2.0 - 1.0);
 	
 	float diff = max(dot(lightdir_ws, normal_ws), 0.0);
