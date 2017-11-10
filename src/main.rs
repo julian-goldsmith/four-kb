@@ -52,8 +52,8 @@ fn main() {
         mesh: mdl.into(),
         trans: Decomposed::<Vector3<f32>, Basis3<f32>> {
             scale: 1.0,
-            rot: Basis3::from_angle_x(Deg(-90.0)),
-            disp: Vector3::new(0.0, -2.0, -1.0),
+            rot: Basis3::one(),
+            disp: Vector3::new(0.0, 0.0, -1.0),
         },
     }));
 
