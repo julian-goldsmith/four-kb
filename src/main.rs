@@ -29,6 +29,7 @@ fn init_gl() -> (glutin::EventsLoop, glutin::GlWindow) {
 	unsafe {
 		gl::Enable(gl::DEPTH_TEST);
 		gl::Enable(gl::CULL_FACE);
+        gl::FrontFace(gl::CCW);
 		
 		gl::ActiveTexture(gl::TEXTURE0);
 		gl::ActiveTexture(gl::TEXTURE1);
@@ -45,7 +46,7 @@ fn main() {
         objects: Vec::new(),
     };
 
-    let mut file = File::open(&Path::new("assets/stylized_levi.mdl")).unwrap();
+    let mut file = File::open(&Path::new("assets/sphere.mdl")).unwrap();
     let mdl = model_loader::load_model(&mut file);
 
     scene.objects.push(Box::new(scene::MeshObject {
@@ -53,7 +54,7 @@ fn main() {
         trans: Decomposed::<Vector3<f32>, Basis3<f32>> {
             scale: 1.0,
             rot: Basis3::one(),
-            disp: Vector3::new(0.0, 0.0, -1.0),
+            disp: Vector3::new(0.0, 0.0, -4.0),
         },
     }));
 

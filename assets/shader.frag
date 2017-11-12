@@ -1,9 +1,10 @@
-#version 150
+#version 430
 
 in vec2 Texcoord;
 in vec4 position_ws;
 in vec4 eyedir_ws;
 in vec4 lightdir_ws;
+in float light_dist;
 in mat4 normal_mat;
 
 out vec4 out_color;
@@ -20,16 +21,15 @@ void main() {
 	
 	vec4 mat_color = texture(tex, Texcoord);
 
-	vec4 normal_val = vec4(normalize(texture(normal_tex, Texcoord).rgb), 1.0);
-	vec4 normal = normal_val * 2.0 - 1.0;
-	vec4 normal_ws = normalize(normal_mat * normal);
+	vec4 normal_val = vec4(normalize(texture(normal_tex, Texcoord).rgb), 0.0);
+	vec3 normal_ws = normalize(normal_mat * normal_val).xyz;
 	
-	float diff = max(dot(lightdir_ws, normal_ws), 0.0);
+	float diff = max(dot(lightdir_ws.xyz, normal_ws), 0.0);
 	
-	vec4 halfway_dir = normalize(lightdir_ws + eyedir_ws);
-	float spec = pow(max(dot(normal_ws, halfway_dir), 0.0), 32.0);
+	vec3 halfway_dir = normalize(lightdir_ws + eyedir_ws).xyz;
+	float spec = pow(max(dot(normal_ws, halfway_dir), 0.0), 16.0);
 	
-	out_color = //vec4(normal, 1.0);//vec4(normal_ws, 1.0);
-		vec4(spec, spec, spec, 1.0) +
-		vec4(diff, diff, diff, 1.0);
+	out_color = vec4(normal_ws, 1.0);
+		//vec4(spec, spec, spec, 1.0) +
+		//vec4(diff, diff, diff, 1.0);
 }
