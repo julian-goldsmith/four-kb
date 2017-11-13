@@ -100,6 +100,16 @@ fn read_vertex(reader: &mut Read) -> Vector3<f32> {
     vertex
 }
 
+fn read_normal(reader: &mut Read) -> Vector3<f32> {
+    let mut normal: Vector3<f32> = unsafe { mem::zeroed() };
+
+    unsafe {
+        reader.read_f32_into_unchecked::<BigEndian>(&mut normal[0..3]).unwrap();
+    };
+
+    normal
+}
+
 fn read_texcoord(reader: &mut Read) -> Vector2<f32> {
     let mut texcoord: Vector2<f32> = unsafe { mem::zeroed() };
 
@@ -138,6 +148,7 @@ pub fn load_model(reader: &mut Read) -> model::Model {
     let indices = read_and_box(reader, read_index);
     let vertices = read_and_box(reader, read_vertex);
     let texcoords = read_and_box(reader, read_texcoord);
+    let normals = read_and_box(reader, read_normal);
 
     model::Model {
         name,
@@ -145,6 +156,7 @@ pub fn load_model(reader: &mut Read) -> model::Model {
         materials,
         indices,
         vertices,
+        normals,
         texcoords,
     }
 }

@@ -94,12 +94,13 @@ impl Drop for IBO {
 pub struct VAO {
 	id: GLuint,
 	verts: VBO,
+    normals: VBO,
 	texcoords: VBO,
 }
 
 impl VAO {
-	pub fn new(verts: VBO, texcoords: VBO, program: &Program) -> VAO {
-		let mut vao = VAO { id: 0, verts, texcoords };
+	pub fn new(verts: VBO, normals: VBO, texcoords: VBO, program: &Program) -> VAO {
+		let mut vao = VAO { id: 0, verts, normals, texcoords };
 
 		unsafe {
 			gl::GenVertexArrays(1, &mut vao.id);
@@ -107,6 +108,7 @@ impl VAO {
 		};
 
 		VAO::bind_attribute("position", &vao.verts, 3, program);
+        VAO::bind_attribute("normal", &vao.normals, 3, program);
 		VAO::bind_attribute("texcoord", &vao.texcoords, 2, program);
 
 		VAO::set_frag_data_name("out_color", program);

@@ -1,6 +1,7 @@
 #version 430
 
 in vec3 position;
+in vec3 normal;
 in vec2 texcoord;
 
 out vec2 Texcoord;
@@ -8,7 +9,7 @@ out vec4 position_ws;
 out vec4 eyedir_ws;
 out vec4 lightdir_ws;
 out float light_dist;
-out mat4 normal_mat;
+out vec3 normal_ws;
 
 uniform mat4 trans;
 uniform mat4 proj;
@@ -24,7 +25,7 @@ void main() {
 	light_dist = distance(lightpos_ws, position_ws);
 	eyedir_ws = normalize(camerapos_ws - position_ws);
 
-	normal_mat = trans;
+	normal_ws = normalize(trans * vec4(normal, 0.0)).xyz;
 	
 	Texcoord = texcoord;
 	

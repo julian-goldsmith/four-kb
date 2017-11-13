@@ -22,17 +22,19 @@ impl Mesh {
 	pub fn new(program: Program, 
                index_data: &[u32],
 			   vertex_data: &[Vector3<GLfloat>],
-			   normals: &Image,
+			   normals: &[Vector3<GLfloat>],
 			   texcoord_data: &[Vector2<GLfloat>],
 			   image: &Image,
+               normal_map: &Image,
                transform: Matrix4<f32>) -> Mesh {
 		
         let ibo = IBO::new(index_data).unwrap();
 		let verts = VBO::new(vertex_data).unwrap();
+        let norms = VBO::new(normals).unwrap();
 		let texcoords = VBO::new(texcoord_data).unwrap();
-		let vao = VAO::new(verts, texcoords, &program);
+		let vao = VAO::new(verts, norms, texcoords, &program);
 
-        let materials = vec![Material::new(program, image, normals)];
+        let materials = vec![Material::new(program, image, normal_map)];
 
 		Mesh { ibo, vao, materials, transform, num_verts: index_data.len() as u32, }
 	}

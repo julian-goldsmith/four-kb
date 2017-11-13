@@ -30,15 +30,16 @@ pub struct Model {
 	pub materials: Box<[Material]>,
     pub indices: Box<[u32]>,
 	pub vertices: Box<[Vector3<f32>]>,
+	pub normals: Box<[Vector3<f32>]>,
 	pub texcoords: Box<[Vector2<f32>]>,
 }
 
 impl From<Model> for Mesh {
     fn from(model: Model) -> Mesh {
         let image = image::load_image(&Path::new("assets/sphere_texture.png")).unwrap();
-        let normals = image::load_image(&Path::new("assets/sphere_normal.png")).unwrap();
+        let normal_map = image::load_image(&Path::new("assets/sphere_normal.png")).unwrap();
 		let program = Program::from_path(&Path::new("assets/shader.vert"), &Path::new("assets/shader.frag"));
 
-        Mesh::new(program, &model.indices[0..], &model.vertices[0..], &normals, &model.texcoords[0..], &image, model.transform)
+        Mesh::new(program, &model.indices[0..], &model.vertices[0..], &model.normals[0..], &model.texcoords[0..], &image, &normal_map, model.transform)
     }
 }
