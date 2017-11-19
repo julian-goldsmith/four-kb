@@ -11,9 +11,7 @@ in vec2 texcoord;
 
 out vec2 Texcoord;
 out vec4 position_ws;
-out vec3 Normal;
-out vec3 Tangent;
-out vec3 Bitangent;
+out mat3 TBN;
 out vec4 lightpos_ws;
 out vec4 camerapos_ws;
 
@@ -23,10 +21,7 @@ void main() {
 	
 	position_ws = vec4(position, 1.0);
 
-	//normal_ws = normalize(trans * vec4(normal, 0.0)).xyz;
-	Normal = normal;
-	Tangent = tangent;
-	Bitangent = cross(normal, tangent);
+	TBN = mat3(tangent, cross(normal, tangent), normal);
 	
 	Texcoord = texcoord;
 	

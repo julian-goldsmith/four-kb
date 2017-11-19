@@ -31,6 +31,7 @@ pub struct Model {
     pub indices: Box<[u32]>,
 	pub vertices: Box<[Vector3<f32>]>,
 	pub normals: Box<[Vector3<f32>]>,
+    pub tangents: Box<[Vector3<f32>]>,
 	pub texcoords: Box<[Vector2<f32>]>,
 }
 
@@ -41,6 +42,8 @@ impl From<Model> for Mesh {
         let disp_map = image::load_image(&Path::new("assets/sphere_displacement.png")).unwrap();
 		let program = Program::from_path(&Path::new("assets/shader.vert"), &Path::new("assets/shader.frag"));
 
-        Mesh::new(program, &model.indices[0..], &model.vertices[0..], &model.normals[0..], &model.texcoords[0..], &image, &normal_map, &disp_map, model.transform)
+        Mesh::new(program, &model.indices[0..], &model.vertices[0..], &model.normals[0..], 
+                  &model.texcoords[0..], &model.tangents[0..], &image, 
+                  &normal_map, &disp_map, model.transform)
     }
 }

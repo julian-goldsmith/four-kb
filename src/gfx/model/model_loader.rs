@@ -1,8 +1,9 @@
 use std::io::Read;
 use std::mem;
+use std::iter::{Iterator, repeat};
 use gfx::model;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
-use cgmath::{Matrix4, Vector2, Vector3,Decomposed,Basis3,Deg,Rotation3, Matrix};
+use cgmath::{Matrix4,Vector2,Vector3,Decomposed,Basis3,Deg,Rotation3,Matrix,InnerSpace,Vector4,Zero};
 
 fn read_bool(reader: &mut Read) -> bool {
     let mut buf = [0];
@@ -141,6 +142,53 @@ fn read_and_box<T, F>(reader: &mut Read, read_fn: F) -> Box<[T]>
     items.into_boxed_slice()
 }
 
+fn calc_tangents(indices: &[u32], vertices: &[Vector3<f32>], 
+                 texcoords: &[Vector2<f32>], normals: &[Vector3<f32>])
+        -> Box<[Vector3<f32>]> {
+    
+    let mut tangents = repeat(Vector4::zero()).
+        take(indices.len()).
+        collect::<Vec<_>>();
+
+    for tri in 0..(vertices.len() / 3) {
+        // FIXME FIXME FIXME: use indices to get triangles
+        let vert1 = vertices[indices[tri * 3] as usize];
+        let vert2 = vertices[indices[tri * 3 + 1] as usize];
+        let vert3 = vertices[indices[tri * 3 + 2] as usize];
+        let uv1 = texcoords[indices[tri * 3] as usize];
+        let uv2 = texcoords[indices[tri * 3 + 1] as usize];
+        let uv3 = texcoords[indices[tri * 3 + 2] as usize];
+        let edge1 = vert2 - vert1;
+        let edge2 = vert3 - vert1;
+        let delta_uv1 = uv2 - uv1;
+        let delta_uv2 = uv3 - uv1;
+
+        let det = 1.0 / (delta_uv1.x * delta_uv2.y - delta_uv2.x * delta_uv1.y);
+        let tangent = Vector3::new(
+                det * (delta_uv2.y * edge1.x - delta_uv1.y * edge2.x),
+                det * (delta_uv2.y * edge1.y - delta_uv1.y * edge2.y),
+                det * (delta_uv2.y * edge1.z - delta_uv1.y * edge2.z)).
+            normalize().
+            extend(1.0);
+
+        for vert in 0..3 {
+            tangents[indices[tri * 3 + vert] as usize] += tangent;
+        };
+    };
+
+    let tangents = tangents.iter().
+        map(|tangent| {
+            if tangent.w == 0.0 {
+                Vector3::new(0.0, 0.0, 0.0)
+            } else {
+                (tangent / tangent.w).truncate()
+            }
+        }).
+        collect::<Vec<_>>();
+
+    tangents.into()
+}
+
 pub fn load_model(reader: &mut Read) -> model::Model {
     let name = String::from("");//read_string(reader);
     let transform = read_transform(reader);
@@ -149,6 +197,7 @@ pub fn load_model(reader: &mut Read) -> model::Model {
     let vertices = read_and_box(reader, read_vertex);
     let texcoords = read_and_box(reader, read_texcoord);
     let normals = read_and_box(reader, read_normal);
+    let tangents = calc_tangents(&indices, &vertices, &texcoords, &normals);
 
     model::Model {
         name,
@@ -156,7 +205,8 @@ pub fn load_model(reader: &mut Read) -> model::Model {
         materials,
         indices,
         vertices,
-        normals,
         texcoords,
+        normals,
+        tangents,
     }
 }

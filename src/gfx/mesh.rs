@@ -20,24 +20,26 @@ pub struct Mesh {
 
 impl Mesh {
 	pub fn new(program: Program, 
-               index_data: &[u32],
-			   vertex_data: &[Vector3<GLfloat>],
+               indices: &[u32],
+			   vertices: &[Vector3<GLfloat>],
 			   normals: &[Vector3<GLfloat>],
-			   texcoord_data: &[Vector2<GLfloat>],
+			   texcoords: &[Vector2<GLfloat>],
+               tangents: &[Vector3<GLfloat>],
 			   image: &Image,
                normal_map: &Image,
                disp_map: &Image,
                transform: Matrix4<f32>) -> Mesh {
 		
-        let ibo = IBO::new(index_data).unwrap();
-		let verts = VBO::new(vertex_data).unwrap();
+        let ibo = IBO::new(indices).unwrap();
+		let verts = VBO::new(vertices).unwrap();
         let norms = VBO::new(normals).unwrap();
-		let texcoords = VBO::new(texcoord_data).unwrap();
-		let vao = VAO::new(verts, norms, texcoords, &program);
+		let texcoords = VBO::new(texcoords).unwrap();
+        let tangents = VBO::new(tangents).unwrap();
+		let vao = VAO::new(verts, norms, texcoords, tangents, &program);
 
         let materials = vec![Material::new(program, image, normal_map, disp_map)];
 
-		Mesh { ibo, vao, materials, transform, num_verts: index_data.len() as u32, }
+		Mesh { ibo, vao, materials, transform, num_verts: indices.len() as u32, }
 	}
 	
 	pub fn draw(&self, view: &Decomposed<Vector3<GLfloat>, Basis3<GLfloat>>, proj: &Matrix4<f32>) {
