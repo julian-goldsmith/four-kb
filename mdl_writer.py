@@ -17,17 +17,44 @@ def pack_tri_texcoords(tc1, tc2, tc3):
 
 
 def pack_tri_indices(i1, i2, i3):
-    return struct.pack('>III', i1, i2, i3)
+    return struct.pack('>III', i1, i2, i3)    
+
+
+def pack_tri_norm(norm):
+    return struct.pack('>fff', norm[0], norm[1], norm[2])
+
+
+def pack_tri_norms(avg_normals, vertices):
+    return pack_tri_norm(avg_normals[vertices[0]]) + pack_tri_norm(avg_normals[vertices[1]]) + pack_tri_norm(avg_normals[vertices[2]])
+
+
+def average_normals(mesh):
+    avg_normals = [(0.0, 0.0, 0.0, 0.0) for _ in mesh.vertices]
+    
+    for _, face in enumerate(mesh.tessfaces):
+        for vert_idx in face.vertices:
+            vn = avg_normals[vert_idx]
+            fn = face.normal
+            avg_normals[vert_idx] = (vn[0] + fn[0], vn[1] + fn[1], vn[2] + fn[2], vn[3] + 1.0)
+            
+    print(avg_normals[0:10])
+    
+    avg_normals = [(norm[0], norm[1], norm[2], 1.0 if norm[3] == 0.0 else norm[3]) for norm in avg_normals]
+            
+    return [(norm[0] / norm[3], norm[1] / norm[3], norm[2] / norm[3]) for norm in avg_normals]
 
 
 def write_verts(file, mesh):
     tris = bytes()
     texcoords = bytes()
+    normals = bytes()
     indices = bytes()
     num_verts = 0
     num_indices = 0
     
     # FIXME: error handling
+    
+    avg_normals = average_normals(mesh)
     
     uv_data = mesh.tessface_uv_textures.active.data
     
@@ -47,6 +74,8 @@ def write_verts(file, mesh):
         tris += pack_tri_verts(mesh.vertices, face.vertices[0], face.vertices[1], face.vertices[2])
         texcoords += pack_tri_texcoords(uv[0], uv[1], uv[2])
         
+        normals += pack_tri_norms(avg_normals, face.vertices)
+        
     file.write(struct.pack('>I', num_indices))
     file.write(indices)
     
@@ -55,6 +84,9 @@ def write_verts(file, mesh):
     
     file.write(struct.pack('>I', num_verts))
     file.write(texcoords)
+    
+    file.write(struct.pack('>I', num_verts))
+    file.write(normals)
     
     
 def pack_matrix4_row(row):

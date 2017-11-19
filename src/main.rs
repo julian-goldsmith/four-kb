@@ -54,7 +54,7 @@ fn main() {
         trans: Decomposed::<Vector3<f32>, Basis3<f32>> {
             scale: 1.0,
             rot: Basis3::one(),
-            disp: Vector3::new(0.0, 0.0, -4.0),
+            disp: Vector3::new(0.0, 0.0, -4.5),
         },
     }));
 

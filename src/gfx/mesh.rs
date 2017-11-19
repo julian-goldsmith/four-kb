@@ -26,6 +26,7 @@ impl Mesh {
 			   texcoord_data: &[Vector2<GLfloat>],
 			   image: &Image,
                normal_map: &Image,
+               disp_map: &Image,
                transform: Matrix4<f32>) -> Mesh {
 		
         let ibo = IBO::new(index_data).unwrap();
@@ -34,7 +35,7 @@ impl Mesh {
 		let texcoords = VBO::new(texcoord_data).unwrap();
 		let vao = VAO::new(verts, norms, texcoords, &program);
 
-        let materials = vec![Material::new(program, image, normal_map)];
+        let materials = vec![Material::new(program, image, normal_map, disp_map)];
 
 		Mesh { ibo, vao, materials, transform, num_verts: index_data.len() as u32, }
 	}
@@ -54,9 +55,9 @@ impl Mesh {
             Uniform { name: "proj", value: proj as &Uniformable },
             Uniform { name: "view", value: &view as &Uniformable },
             
-            // FIXME: these were i32s, make sure u32s are correct
             Uniform { name: "tex", value: &(material.diffuse_tex.tex_unit as i32) as &Uniformable },
             Uniform { name: "normal_tex", value: &(material.normal_tex.tex_unit as i32) as &Uniformable },
+            Uniform { name: "disp_tex", value: &(material.disp_tex.tex_unit as i32) as &Uniformable },
         ];
 
         material.bind(&uniforms);

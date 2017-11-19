@@ -37,9 +37,10 @@ pub struct Model {
 impl From<Model> for Mesh {
     fn from(model: Model) -> Mesh {
         let image = image::load_image(&Path::new("assets/sphere_texture.png")).unwrap();
-        let normal_map = image::load_image(&Path::new("assets/sphere_normal.png")).unwrap();
+        let normal_map = image::load_image(&Path::new("assets/sphere_normals.png")).unwrap();
+        let disp_map = image::load_image(&Path::new("assets/sphere_displacement.png")).unwrap();
 		let program = Program::from_path(&Path::new("assets/shader.vert"), &Path::new("assets/shader.frag"));
 
-        Mesh::new(program, &model.indices[0..], &model.vertices[0..], &model.normals[0..], &model.texcoords[0..], &image, &normal_map, model.transform)
+        Mesh::new(program, &model.indices[0..], &model.vertices[0..], &model.normals[0..], &model.texcoords[0..], &image, &normal_map, &disp_map, model.transform)
     }
 }
