@@ -16,7 +16,7 @@ out vec4 lightpos_ws;
 out vec4 camerapos_ws;
 
 void main() {
-	lightpos_ws = vec4(-1, 0, 0, 1.0);
+	lightpos_ws = vec4(0, 0, 0, 1.0);
 	camerapos_ws = vec4(0, 0, 0, 1.0);	/* FIXME: make a uniform */
 	
 	position_ws = vec4(position, 1.0);

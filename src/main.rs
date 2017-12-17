@@ -46,7 +46,7 @@ fn main() {
         objects: Vec::new(),
     };
 
-    let mut file = File::open(&Path::new("assets/sphere.mdl")).unwrap();
+    let mut file = File::open(&Path::new("assets/stylized_levi.mdl")).unwrap();
     let mdl = model_loader::load_model(&mut file);
 
     scene.objects.push(Box::new(scene::MeshObject {
@@ -54,7 +54,7 @@ fn main() {
         trans: Decomposed::<Vector3<f32>, Basis3<f32>> {
             scale: 1.0,
             rot: Basis3::one(),
-            disp: Vector3::new(0.0, 0.0, -4.5),
+            disp: Vector3::new(0.0, 0.0, -0.5),
         },
     }));
 

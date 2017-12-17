@@ -25,10 +25,9 @@ void main() {
 	vec3 normal_adj = normalize(normal_map * 2.0 - 1.0);
 	vec3 normal_ws = mat3(trans) * TBN * normal_adj;
 
-	vec4 disp_map = vec4((texture(disp_tex, Texcoord).rgb * 2.0 - 1.0), 1.0);
-	vec4 disp_adj = disp_map * vec4(normal_ws, 1.0);
+	vec4 disp_map = vec4(texture(disp_tex, Texcoord).rgb, 1.0) * 2.0 - 1.0;
 
-	vec4 position_adj = trans * (position_ws + disp_adj);
+	vec4 position_adj = trans * (position_ws);
 	
 	vec4 lightdir_ws = normalize(lightpos_ws - position_adj);
 	float light_dist = distance(lightpos_ws, position_adj);
@@ -38,8 +37,8 @@ void main() {
 	
 	vec3 halfway_dir = normalize(lightdir_ws + eyedir_ws).xyz;
 	float spec = pow(max(dot(normal_ws, halfway_dir), 0.0), 16.0);
-	
-	out_color = //vec4(normal_ws, 1.0);
+
+	out_color =
 		spec * mat_color +
 		diff * mat_color;
 }
