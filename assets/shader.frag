@@ -33,7 +33,7 @@ void main() {
 	float light_dist = distance(lightpos_ws, position_adj);
 	vec4 eyedir_ws = normalize(camerapos_ws - position_adj);
 	
-	float diff = max(dot(lightdir_ws.xyz, normal_ws), 0.0);
+	float diff = clamp(dot(lightdir_ws.xyz, normal_ws), 0.0, 1.0);
 	
 	vec3 halfway_dir = normalize(lightdir_ws + eyedir_ws).xyz;
 	float spec = pow(max(dot(normal_ws, halfway_dir), 0.0), 16.0);

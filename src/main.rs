@@ -46,7 +46,7 @@ fn main() {
         objects: Vec::new(),
     };
 
-    let mut file = File::open(&Path::new("assets/stylized_levi.mdl")).unwrap();
+    let mut file = File::open(&Path::new("assets/mesh.mdl")).unwrap();
     let mdl = model_loader::load_model(&mut file);
 
     scene.objects.push(Box::new(scene::MeshObject {

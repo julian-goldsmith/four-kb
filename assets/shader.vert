@@ -17,9 +17,9 @@ out vec4 camerapos_ws;
 
 void main() {
 	lightpos_ws = vec4(0, 0, 0, 1.0);
-	camerapos_ws = vec4(0, 0, 0, 1.0);	/* FIXME: make a uniform */
+	camerapos_ws = vec4(0, 0, -5.0, 1.0);	/* FIXME: make a uniform */
 	
-	position_ws = vec4(position, 1.0);
+	position_ws = vec4(position, abs(distance(vec3(camerapos_ws), position)));
 
 	TBN = mat3(tangent, cross(normal, tangent), normal);
 	
